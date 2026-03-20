@@ -6,140 +6,157 @@
 <title>ניהול אתר בוחנים</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; padding: 16px; }
+body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
 
-.container { max-width: 700px; margin: 0 auto; }
+.header { background: #151f2b; padding: 16px; text-align: center; border-bottom: 2px solid #1e2d3d; }
+.header h1 { color: #7bc67e; font-size: 1.3rem; margin-bottom: 4px; }
+.header p { color: #6b7b8d; font-size: 0.8rem; }
 
-h1 { color: #7bc67e; text-align: center; margin-bottom: 8px; font-size: 1.4rem; }
-.subtitle { text-align: center; color: #6b7b8d; margin-bottom: 24px; font-size: 0.85rem; }
+.container { max-width: 900px; margin: 0 auto; padding: 16px; }
 
-/* Token setup */
-.token-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; }
-.token-section h3 { color: #7bc67e; margin-bottom: 8px; }
-.token-section p { color: #8a9a8e; font-size: 0.85rem; margin-bottom: 12px; }
-.token-input { width: 100%; padding: 10px 14px; background: #0f1923; border: 1px solid #2a3a4a; border-radius: 8px; color: #e0e0e0; font-size: 0.9rem; direction: ltr; }
-.token-status { margin-top: 8px; font-size: 0.8rem; }
-.token-ok { color: #7bc67e; }
-.token-bad { color: #e74c3c; }
+/* Token */
+.token-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; background: #151f2b; padding: 12px; border-radius: 8px; border: 1px solid #1e2d3d; }
+.token-bar label { color: #8a9a8e; font-size: 0.85rem; white-space: nowrap; }
+.token-bar input { flex: 1; padding: 8px 10px; background: #0f1923; border: 1px solid #2a3a4a; border-radius: 6px; color: #e0e0e0; font-size: 0.85rem; direction: ltr; }
+.token-bar .status { font-size: 0.8rem; min-width: 24px; }
 
-/* Target selector */
-.target-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; }
-.target-section h3 { color: #7bc67e; margin-bottom: 12px; }
-.target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.target-btn { padding: 12px 8px; text-align: center; font-size: 0.9rem; font-weight: 600; color: #8a9a9e; background: #0f1923; border: 2px solid #1e2d3d; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-.target-btn:hover { background: #1a2636; color: #b0c0c4; }
-.target-btn.active { background: #1a3a2a; color: #7bc67e; border-color: #4a7c59; }
-.target-btn.schedule { grid-column: span 3; background: #1a2636; }
-.target-btn.schedule.active { background: #1a3a2a; }
+/* Steps */
+.step { background: #151f2b; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #1e2d3d; }
+.step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.step-num { width: 32px; height: 32px; background: #1a3a2a; color: #7bc67e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
+.step-title { color: #7bc67e; font-size: 1rem; font-weight: 600; }
 
-/* Upload area */
-.upload-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; display: none; }
-.upload-section.visible { display: block; }
-.upload-section h3 { color: #7bc67e; margin-bottom: 12px; }
-
-.drop-zone { border: 2px dashed #2a3a4a; border-radius: 12px; padding: 40px 20px; text-align: center; color: #6b7b8d; cursor: pointer; transition: all 0.3s; margin-bottom: 12px; }
+/* Drop zone */
+.drop-zone { border: 2px dashed #2a3a4a; border-radius: 12px; padding: 30px 20px; text-align: center; color: #6b7b8d; cursor: pointer; transition: all 0.3s; }
 .drop-zone:hover, .drop-zone.drag-over { border-color: #4a7c59; background: #1a3a2a22; color: #7bc67e; }
-.drop-zone-icon { font-size: 3rem; margin-bottom: 8px; }
-.drop-zone p { font-size: 0.9rem; }
-.drop-zone small { font-size: 0.75rem; color: #4a5a6a; }
-
+.drop-zone-icon { font-size: 2.5rem; margin-bottom: 6px; }
 .file-input { display: none; }
 
-/* Preview */
-.preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; }
-.preview-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #2a3a4a; }
-.preview-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
-.preview-remove { position: absolute; top: 4px; left: 4px; background: rgba(231,76,60,0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
-.preview-name { font-size: 0.7rem; padding: 4px; color: #8a9a8e; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Uploaded images pool */
+.pool { display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; padding: 8px; background: #0a1018; border-radius: 8px; margin-top: 10px; }
+.pool:empty::after { content: 'אין תמונות - גרור למעלה'; color: #3a4a5a; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 40px; }
 
-/* Actions */
-.actions { display: flex; gap: 10px; flex-wrap: wrap; }
-.btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 140px; }
+.thumb { width: 90px; height: 70px; border-radius: 6px; overflow: hidden; cursor: grab; position: relative; border: 2px solid #2a3a4a; transition: all 0.2s; flex-shrink: 0; }
+.thumb:active { cursor: grabbing; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+.thumb .remove { position: absolute; top: 2px; left: 2px; background: rgba(231,76,60,0.85); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.thumb.dragging { opacity: 0.4; border-color: #4a7c59; }
+
+/* Day lanes */
+.lanes { display: flex; flex-direction: column; gap: 10px; }
+.lane { background: #0f1923; border: 2px solid #1e2d3d; border-radius: 10px; padding: 10px; min-height: 80px; transition: all 0.2s; }
+.lane.drag-over { border-color: #4a7c59; background: #1a3a2a22; }
+.lane-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.lane-title { font-weight: 700; font-size: 0.95rem; color: #b0c0c4; }
+.lane-title.weekly { color: #e0a030; }
+.lane-count { font-size: 0.75rem; color: #4a5a6a; }
+.lane-images { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; }
+.lane-images:empty::after { content: 'גרור תמונות לכאן'; color: #2a3a4a; font-size: 0.8rem; display: flex; align-items: center; width: 100%; justify-content: center; }
+
+/* Upload button */
+.upload-bar { position: sticky; bottom: 0; background: #151f2b; border-top: 2px solid #1e2d3d; padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: center; z-index: 10; }
+.btn { padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-upload { background: #2d6a4f; color: white; }
 .btn-upload:hover { background: #3a8963; }
 .btn-upload:disabled { background: #1a3a2a; color: #4a7c59; cursor: not-allowed; }
-.btn-clear { background: #4a1a1a; color: #e74c3c; }
+.btn-clear { background: #4a1a1a; color: #e74c3c; font-size: 0.85rem; padding: 10px 18px; }
 .btn-clear:hover { background: #5a2020; }
-
-/* Existing images */
-.existing-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; display: none; }
-.existing-section.visible { display: block; }
-.existing-section h3 { color: #e0a030; margin-bottom: 12px; }
-.existing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
-.existing-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #2a3a4a; }
-.existing-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
-.existing-item .name { font-size: 0.7rem; padding: 4px; color: #8a9a8e; text-align: center; }
+.upload-status { color: #8a9a8e; font-size: 0.85rem; }
 
 /* Progress */
-.progress-bar { width: 100%; height: 6px; background: #1e2d3d; border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
-.progress-bar.visible { display: block; }
+.progress { width: 100%; height: 4px; background: #1e2d3d; border-radius: 2px; overflow: hidden; display: none; }
+.progress.visible { display: block; }
 .progress-fill { height: 100%; background: #4a7c59; transition: width 0.3s; width: 0%; }
 
 /* Log */
-.log { margin-top: 16px; max-height: 200px; overflow-y: auto; font-size: 0.8rem; font-family: monospace; direction: ltr; text-align: left; }
-.log-item { padding: 3px 8px; border-radius: 4px; margin-bottom: 2px; }
+.log { max-height: 150px; overflow-y: auto; font-size: 0.75rem; font-family: monospace; direction: ltr; text-align: left; margin-top: 8px; }
+.log-item { padding: 2px 6px; border-radius: 3px; margin-bottom: 1px; }
 .log-ok { background: #0a2a1a; color: #7bc67e; }
 .log-err { background: #2a0a0a; color: #e74c3c; }
 .log-info { background: #0a1a2a; color: #5a9aca; }
 
-/* Back link */
-.back-link { display: block; text-align: center; margin-top: 20px; color: #4a7c59; text-decoration: none; font-size: 0.9rem; }
+.back-link { display: block; text-align: center; padding: 16px; color: #4a7c59; text-decoration: none; font-size: 0.9rem; }
 .back-link:hover { color: #7bc67e; }
 </style>
 </head>
 <body>
 
+<div class="header">
+  <h1>📤 ניהול אתר בוחנים</h1>
+  <p>העלה תמונות → גרור לימים → לחץ שמור</p>
+</div>
+
 <div class="container">
-  <h1>ניהול אתר בוחנים</h1>
-  <p class="subtitle">העלאת תמונות וניהול תוכן</p>
 
   <!-- Token -->
-  <div class="token-section" id="token-section">
-    <h3>🔑 הגדרת גישה</h3>
-    <p>הכנס את ה-Token של GitHub (נשמר בדפדפן שלך בלבד, לא נשלח לשום מקום אחר)</p>
-    <input type="password" class="token-input" id="token-input" placeholder="ghp_xxxx..." />
-    <div class="token-status" id="token-status"></div>
+  <div class="token-bar">
+    <label>🔑 Token:</label>
+    <input type="password" id="token-input" placeholder="ghp_xxxx..." />
+    <span class="status" id="token-status"></span>
   </div>
 
-  <!-- Target -->
-  <div class="target-section">
-    <h3>📁 בחר יעד</h3>
-    <div class="target-grid">
-      <button class="target-btn schedule" data-target="weekly" onclick="selectTarget('weekly')">📋 סידור שבועי</button>
-      <button class="target-btn" data-target="day1" onclick="selectTarget('day1')">יום א'</button>
-      <button class="target-btn" data-target="day2" onclick="selectTarget('day2')">יום ב'</button>
-      <button class="target-btn" data-target="day3" onclick="selectTarget('day3')">יום ג'</button>
-      <button class="target-btn" data-target="day4" onclick="selectTarget('day4')">יום ד'</button>
-      <button class="target-btn" data-target="day5" onclick="selectTarget('day5')">יום ה'</button>
+  <!-- Step 1: Upload images -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <div class="step-title">העלה את כל התמונות</div>
     </div>
-  </div>
-
-  <!-- Existing images -->
-  <div class="existing-section" id="existing-section">
-    <h3>📸 תמונות קיימות</h3>
-    <div class="existing-grid" id="existing-grid"></div>
-    <button class="btn btn-clear" id="btn-delete-all" onclick="deleteAllExisting()">🗑️ מחק את כל התמונות הקיימות</button>
-  </div>
-
-  <!-- Upload -->
-  <div class="upload-section" id="upload-section">
-    <h3>📤 העלאת תמונות חדשות</h3>
     <div class="drop-zone" id="drop-zone">
       <div class="drop-zone-icon">📸</div>
       <p>גרור תמונות לכאן או לחץ לבחירה</p>
-      <small>JPG, JPEG, PNG, WEBP</small>
     </div>
     <input type="file" class="file-input" id="file-input" multiple accept="image/*" />
-    <div class="preview-grid" id="preview-grid"></div>
-    <div class="actions">
-      <button class="btn btn-upload" id="btn-upload" onclick="uploadImages()" disabled>📤 העלה תמונות</button>
-    </div>
-    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-    <div class="log" id="log"></div>
+    <div class="pool" id="pool"></div>
   </div>
 
-  <a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
+  <!-- Step 2: Assign to days -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <div class="step-title">גרור כל תמונה ליום המתאים</div>
+    </div>
+    <div class="lanes" id="lanes">
+      <div class="lane" data-lane="weekly">
+        <div class="lane-header"><span class="lane-title weekly">📋 סידור שבועי</span><span class="lane-count" data-count="weekly"></span></div>
+        <div class="lane-images" data-images="weekly"></div>
+      </div>
+      <div class="lane" data-lane="day1">
+        <div class="lane-header"><span class="lane-title">יום א'</span><span class="lane-count" data-count="day1"></span></div>
+        <div class="lane-images" data-images="day1"></div>
+      </div>
+      <div class="lane" data-lane="day2">
+        <div class="lane-header"><span class="lane-title">יום ב'</span><span class="lane-count" data-count="day2"></span></div>
+        <div class="lane-images" data-images="day2"></div>
+      </div>
+      <div class="lane" data-lane="day3">
+        <div class="lane-header"><span class="lane-title">יום ג'</span><span class="lane-count" data-count="day3"></span></div>
+        <div class="lane-images" data-images="day3"></div>
+      </div>
+      <div class="lane" data-lane="day4">
+        <div class="lane-header"><span class="lane-title">יום ד'</span><span class="lane-count" data-count="day4"></span></div>
+        <div class="lane-images" data-images="day4"></div>
+      </div>
+      <div class="lane" data-lane="day5">
+        <div class="lane-header"><span class="lane-title">יום ה'</span><span class="lane-count" data-count="day5"></span></div>
+        <div class="lane-images" data-images="day5"></div>
+      </div>
+    </div>
+  </div>
+
 </div>
+
+<!-- Sticky upload bar -->
+<div class="upload-bar">
+  <button class="btn btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
+  <button class="btn btn-upload" id="btn-upload" onclick="uploadAll()" disabled>💾 שמור באתר</button>
+  <span class="upload-status" id="upload-status"></span>
+</div>
+<div class="progress" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
+<div style="max-width:900px;margin:0 auto;padding:0 16px;">
+  <div class="log" id="log"></div>
+</div>
+
+<a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
 
 <script>
 const OWNER = 'bohanyzahal-cyber';
@@ -147,241 +164,282 @@ const REPO = 'bohan-site';
 const BRANCH = 'main';
 
 let token = localStorage.getItem('gh_token') || '';
-let currentTarget = null;
-let filesToUpload = [];
-let existingFiles = [];
+let imageFiles = new Map(); // id -> { file, blob, url }
+let draggedId = null;
 
 // === TOKEN ===
 const tokenInput = document.getElementById('token-input');
 tokenInput.value = token;
-tokenInput.addEventListener('input', async () => {
+tokenInput.addEventListener('input', () => {
   token = tokenInput.value.trim();
   localStorage.setItem('gh_token', token);
-  if (token.length > 10) {
-    await verifyToken();
-  }
+  if (token.length > 10) verifyToken();
 });
-
 if (token) verifyToken();
 
 async function verifyToken() {
-  const status = document.getElementById('token-status');
+  const s = document.getElementById('token-status');
   try {
-    const resp = await fetch('https://api.github.com/user', {
-      headers: { Authorization: `token ${token}` }
-    });
-    if (resp.ok) {
-      const user = await resp.json();
-      status.innerHTML = `<span class="token-ok">✅ מחובר כ-${user.login}</span>`;
-    } else {
-      status.innerHTML = '<span class="token-bad">❌ Token לא תקין</span>';
-    }
-  } catch {
-    status.innerHTML = '<span class="token-bad">❌ שגיאת חיבור</span>';
-  }
+    const r = await fetch('https://api.github.com/user', { headers: { Authorization: `token ${token}` } });
+    s.textContent = r.ok ? '✅' : '❌';
+  } catch { s.textContent = '❌'; }
 }
 
-// === TARGET SELECTION ===
-function selectTarget(target) {
-  currentTarget = target;
-  document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[data-target="${target}"]`).classList.add('active');
-  document.getElementById('upload-section').classList.add('visible');
-  filesToUpload = [];
-  document.getElementById('preview-grid').innerHTML = '';
-  document.getElementById('btn-upload').disabled = true;
-  document.getElementById('log').innerHTML = '';
-  loadExisting();
-}
-
-function getTargetPath() {
-  if (currentTarget === 'weekly') return 'images/weekly';
-  return `images/orders/${currentTarget.replace('day', 'day')}`;
-}
-
-// === LOAD EXISTING ===
-async function loadExisting() {
-  const section = document.getElementById('existing-section');
-  const grid = document.getElementById('existing-grid');
-
-  try {
-    const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${getTargetPath()}?ref=${BRANCH}`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    if (!resp.ok) { section.classList.remove('visible'); return; }
-    const files = await resp.json();
-    existingFiles = Array.isArray(files) ? files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name)) : [];
-
-    if (existingFiles.length === 0) {
-      section.classList.remove('visible');
-      return;
-    }
-
-    section.classList.add('visible');
-    grid.innerHTML = existingFiles.map(f => `
-      <div class="existing-item">
-        <img src="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${f.path}" alt="${f.name}" />
-        <div class="name">${f.name}</div>
-      </div>
-    `).join('');
-  } catch {
-    section.classList.remove('visible');
-  }
-}
-
-// === DELETE EXISTING ===
-async function deleteAllExisting() {
-  if (!confirm(`למחוק ${existingFiles.length} תמונות קיימות?`)) return;
-
-  const log = document.getElementById('log');
-  log.innerHTML = '';
-
-  for (const file of existingFiles) {
-    try {
-      const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${file.path}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `token ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          message: `Delete ${file.name}`,
-          sha: file.sha,
-          branch: BRANCH
-        })
-      });
-      if (resp.ok) {
-        addLog(`Deleted: ${file.name}`, 'ok');
-      } else {
-        addLog(`Error deleting ${file.name}`, 'err');
-      }
-    } catch (e) {
-      addLog(`Error: ${e.message}`, 'err');
-    }
-  }
-
-  loadExisting();
-  addLog('Done deleting!', 'info');
-}
-
-// === DRAG & DROP ===
+// === FILE DROP ===
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 
 dropZone.addEventListener('click', () => fileInput.click());
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  addFiles(e.dataTransfer.files);
-});
-fileInput.addEventListener('change', () => addFiles(fileInput.files));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
 
 function addFiles(fileList) {
   for (const file of fileList) {
     if (!file.type.startsWith('image/')) continue;
-    filesToUpload.push(file);
+    const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+    const url = URL.createObjectURL(file);
+    imageFiles.set(id, { file, url });
+    addThumbToPool(id, url);
   }
-  renderPreviews();
+  updateCounts();
 }
 
-function renderPreviews() {
-  const grid = document.getElementById('preview-grid');
-  grid.innerHTML = '';
-  filesToUpload.forEach((file, i) => {
-    const div = document.createElement('div');
-    div.className = 'preview-item';
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(file);
-    const remove = document.createElement('button');
-    remove.className = 'preview-remove';
-    remove.textContent = '×';
-    remove.onclick = () => { filesToUpload.splice(i, 1); renderPreviews(); };
-    const name = document.createElement('div');
-    name.className = 'preview-name';
-    name.textContent = file.name;
-    div.appendChild(remove);
-    div.appendChild(img);
-    div.appendChild(name);
-    grid.appendChild(div);
+function addThumbToPool(id, url) {
+  const pool = document.getElementById('pool');
+  pool.appendChild(createThumb(id, url));
+}
+
+function createThumb(id, url) {
+  const div = document.createElement('div');
+  div.className = 'thumb';
+  div.draggable = true;
+  div.dataset.id = id;
+  div.innerHTML = `<img src="${url}" /><button class="remove" onclick="removeImage('${id}', this.parentElement)">×</button>`;
+
+  // Drag events
+  div.addEventListener('dragstart', e => {
+    draggedId = id;
+    div.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
   });
-  document.getElementById('btn-upload').disabled = filesToUpload.length === 0;
+  div.addEventListener('dragend', () => {
+    div.classList.remove('dragging');
+    draggedId = null;
+  });
+
+  // Touch events for mobile
+  let touchStartX, touchStartY, touchClone;
+  div.addEventListener('touchstart', e => {
+    draggedId = id;
+    const touch = e.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  }, { passive: true });
+
+  div.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const touch = e.touches[0];
+    if (!touchClone) {
+      touchClone = div.cloneNode(true);
+      touchClone.style.position = 'fixed';
+      touchClone.style.zIndex = '9999';
+      touchClone.style.opacity = '0.7';
+      touchClone.style.pointerEvents = 'none';
+      document.body.appendChild(touchClone);
+      div.style.opacity = '0.3';
+    }
+    touchClone.style.left = (touch.clientX - 45) + 'px';
+    touchClone.style.top = (touch.clientY - 35) + 'px';
+
+    // Highlight lane under finger
+    document.querySelectorAll('.lane').forEach(l => l.classList.remove('drag-over'));
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const lane = el?.closest('.lane');
+    if (lane) lane.classList.add('drag-over');
+  }, { passive: false });
+
+  div.addEventListener('touchend', e => {
+    if (touchClone) {
+      touchClone.remove();
+      touchClone = null;
+    }
+    div.style.opacity = '1';
+    document.querySelectorAll('.lane').forEach(l => l.classList.remove('drag-over'));
+
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const lane = el?.closest('.lane');
+    if (lane) {
+      const imagesDiv = lane.querySelector('.lane-images');
+      imagesDiv.appendChild(div);
+      updateCounts();
+    }
+    draggedId = null;
+  });
+
+  return div;
 }
 
-// === UPLOAD ===
-async function uploadImages() {
+function removeImage(id, element) {
+  imageFiles.delete(id);
+  element.remove();
+  updateCounts();
+}
+
+// === LANE DROP TARGETS ===
+document.querySelectorAll('.lane').forEach(lane => {
+  lane.addEventListener('dragover', e => { e.preventDefault(); lane.classList.add('drag-over'); });
+  lane.addEventListener('dragleave', () => lane.classList.remove('drag-over'));
+  lane.addEventListener('drop', e => {
+    e.preventDefault();
+    lane.classList.remove('drag-over');
+    if (!draggedId) return;
+    const thumb = document.querySelector(`[data-id="${draggedId}"]`);
+    if (thumb) {
+      lane.querySelector('.lane-images').appendChild(thumb);
+      updateCounts();
+    }
+  });
+});
+
+// Also allow dropping back to pool
+const pool = document.getElementById('pool');
+pool.addEventListener('dragover', e => { e.preventDefault(); });
+pool.addEventListener('drop', e => {
+  e.preventDefault();
+  if (!draggedId) return;
+  const thumb = document.querySelector(`[data-id="${draggedId}"]`);
+  if (thumb) { pool.appendChild(thumb); updateCounts(); }
+});
+
+function updateCounts() {
+  ['weekly','day1','day2','day3','day4','day5'].forEach(lane => {
+    const images = document.querySelector(`[data-images="${lane}"]`);
+    const count = document.querySelector(`[data-count="${lane}"]`);
+    const n = images ? images.querySelectorAll('.thumb').length : 0;
+    count.textContent = n > 0 ? `${n} תמונות` : '';
+  });
+
+  // Enable upload if any lane has images
+  const total = document.querySelectorAll('.lane-images .thumb').length;
+  document.getElementById('btn-upload').disabled = total === 0;
+  document.getElementById('upload-status').textContent = total > 0 ? `${total} תמונות מוכנות` : '';
+}
+
+// === CLEAR ALL ===
+function clearAll() {
+  if (!confirm('למחוק את כל התמונות מהדף?')) return;
+  imageFiles.clear();
+  document.getElementById('pool').innerHTML = '';
+  document.querySelectorAll('.lane-images').forEach(l => l.innerHTML = '');
+  updateCounts();
+}
+
+// === UPLOAD ALL ===
+async function uploadAll() {
   if (!token) { alert('הכנס Token קודם'); return; }
-  if (!currentTarget) { alert('בחר יעד'); return; }
-  if (filesToUpload.length === 0) return;
+
+  const lanes = ['weekly','day1','day2','day3','day4','day5'];
+  const assignments = {};
+  let totalImages = 0;
+
+  for (const lane of lanes) {
+    const thumbs = document.querySelector(`[data-images="${lane}"]`).querySelectorAll('.thumb');
+    if (thumbs.length > 0) {
+      assignments[lane] = [];
+      thumbs.forEach(t => {
+        assignments[lane].push(t.dataset.id);
+        totalImages++;
+      });
+    }
+  }
+
+  if (totalImages === 0) { alert('גרור תמונות לימים קודם'); return; }
 
   const btn = document.getElementById('btn-upload');
   btn.disabled = true;
   btn.textContent = '⏳ מעלה...';
-  const progressBar = document.getElementById('progress-bar');
+  const progress = document.getElementById('progress');
   const progressFill = document.getElementById('progress-fill');
-  progressBar.classList.add('visible');
+  progress.classList.add('visible');
+  const log = document.getElementById('log');
+  log.innerHTML = '';
 
-  const total = filesToUpload.length;
   let done = 0;
 
-  for (const file of filesToUpload) {
-    const fileName = `${done + 1}.${file.name.split('.').pop().toLowerCase()}`;
-    const path = `${getTargetPath()}/${currentTarget === 'weekly' ? 'schedule.' + file.name.split('.').pop().toLowerCase() : fileName}`;
+  // First delete existing images in assigned lanes
+  for (const lane of Object.keys(assignments)) {
+    const apiPath = lane === 'weekly' ? 'images/weekly' : `images/orders/${lane}`;
+    addLog(`Cleaning ${apiPath}...`, 'info');
 
     try {
-      const base64 = await fileToBase64(file);
-
-      // Check if file exists (need sha for update)
-      let sha = null;
-      try {
-        const existing = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
-          headers: { Authorization: `token ${token}` }
-        });
-        if (existing.ok) {
-          const data = await existing.json();
-          sha = data.sha;
-        }
-      } catch {}
-
-      const body = {
-        message: `Upload ${path}`,
-        content: base64,
-        branch: BRANCH
-      };
-      if (sha) body.sha = sha;
-
-      const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: `token ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+      const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}?ref=${BRANCH}`, {
+        headers: { Authorization: `token ${token}` }
       });
-
       if (resp.ok) {
-        addLog(`✅ ${path}`, 'ok');
-      } else {
-        const err = await resp.json();
-        addLog(`❌ ${file.name}: ${err.message}`, 'err');
+        const files = await resp.json();
+        if (Array.isArray(files)) {
+          for (const file of files) {
+            if (/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
+              await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${file.path}`, {
+                method: 'DELETE',
+                headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: `Delete ${file.name}`, sha: file.sha, branch: BRANCH })
+              });
+              addLog(`Deleted old: ${file.name}`, 'info');
+            }
+          }
+        }
       }
     } catch (e) {
-      addLog(`❌ ${file.name}: ${e.message}`, 'err');
+      addLog(`Warning: ${e.message}`, 'err');
     }
-
-    done++;
-    progressFill.style.width = `${(done / total) * 100}%`;
   }
 
-  addLog(`🎉 סיום! ${done} תמונות הועלו`, 'info');
-  btn.textContent = '📤 העלה תמונות';
-  filesToUpload = [];
-  document.getElementById('preview-grid').innerHTML = '';
-  btn.disabled = true;
+  // Upload new images
+  for (const [lane, ids] of Object.entries(assignments)) {
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      const data = imageFiles.get(id);
+      if (!data) continue;
 
-  // Reload existing
-  setTimeout(() => loadExisting(), 2000);
+      const ext = data.file.name.split('.').pop().toLowerCase();
+      let path;
+      if (lane === 'weekly') {
+        path = ids.length === 1 ? `images/weekly/schedule.${ext}` : `images/weekly/${i + 1}.${ext}`;
+      } else {
+        path = `images/orders/${lane}/${i + 1}.${ext}`;
+      }
+
+      try {
+        const base64 = await fileToBase64(data.file);
+        const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+          method: 'PUT',
+          headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: `Upload ${path}`, content: base64, branch: BRANCH })
+        });
+
+        if (resp.ok) {
+          addLog(`✅ ${path}`, 'ok');
+        } else {
+          const err = await resp.json();
+          addLog(`❌ ${path}: ${err.message}`, 'err');
+        }
+      } catch (e) {
+        addLog(`❌ ${path}: ${e.message}`, 'err');
+      }
+
+      done++;
+      progressFill.style.width = `${(done / totalImages) * 100}%`;
+    }
+  }
+
+  addLog(`🎉 סיום! ${done} תמונות הועלו בהצלחה`, 'info');
+  btn.textContent = '💾 שמור באתר';
+  btn.disabled = false;
+  document.getElementById('upload-status').textContent = '✅ הועלה בהצלחה!';
 }
 
 function fileToBase64(file) {

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ניהול אתר בוחנים</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; padding: 16px; }
+
+.container { max-width: 700px; margin: 0 auto; }
+
+h1 { color: #7bc67e; text-align: center; margin-bottom: 8px; font-size: 1.4rem; }
+.subtitle { text-align: center; color: #6b7b8d; margin-bottom: 24px; font-size: 0.85rem; }
+
+/* Token setup */
+.token-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; }
+.token-section h3 { color: #7bc67e; margin-bottom: 8px; }
+.token-section p { color: #8a9a8e; font-size: 0.85rem; margin-bottom: 12px; }
+.token-input { width: 100%; padding: 10px 14px; background: #0f1923; border: 1px solid #2a3a4a; border-radius: 8px; color: #e0e0e0; font-size: 0.9rem; direction: ltr; }
+.token-status { margin-top: 8px; font-size: 0.8rem; }
+.token-ok { color: #7bc67e; }
+.token-bad { color: #e74c3c; }
+
+/* Target selector */
+.target-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; }
+.target-section h3 { color: #7bc67e; margin-bottom: 12px; }
+.target-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.target-btn { padding: 12px 8px; text-align: center; font-size: 0.9rem; font-weight: 600; color: #8a9a9e; background: #0f1923; border: 2px solid #1e2d3d; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+.target-btn:hover { background: #1a2636; color: #b0c0c4; }
+.target-btn.active { background: #1a3a2a; color: #7bc67e; border-color: #4a7c59; }
+.target-btn.schedule { grid-column: span 3; background: #1a2636; }
+.target-btn.schedule.active { background: #1a3a2a; }
+
+/* Upload area */
+.upload-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; display: none; }
+.upload-section.visible { display: block; }
+.upload-section h3 { color: #7bc67e; margin-bottom: 12px; }
+
+.drop-zone { border: 2px dashed #2a3a4a; border-radius: 12px; padding: 40px 20px; text-align: center; color: #6b7b8d; cursor: pointer; transition: all 0.3s; margin-bottom: 12px; }
+.drop-zone:hover, .drop-zone.drag-over { border-color: #4a7c59; background: #1a3a2a22; color: #7bc67e; }
+.drop-zone-icon { font-size: 3rem; margin-bottom: 8px; }
+.drop-zone p { font-size: 0.9rem; }
+.drop-zone small { font-size: 0.75rem; color: #4a5a6a; }
+
+.file-input { display: none; }
+
+/* Preview */
+.preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.preview-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #2a3a4a; }
+.preview-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
+.preview-remove { position: absolute; top: 4px; left: 4px; background: rgba(231,76,60,0.9); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+.preview-name { font-size: 0.7rem; padding: 4px; color: #8a9a8e; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Actions */
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.btn { padding: 12px 24px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; flex: 1; min-width: 140px; }
+.btn-upload { background: #2d6a4f; color: white; }
+.btn-upload:hover { background: #3a8963; }
+.btn-upload:disabled { background: #1a3a2a; color: #4a7c59; cursor: not-allowed; }
+.btn-clear { background: #4a1a1a; color: #e74c3c; }
+.btn-clear:hover { background: #5a2020; }
+
+/* Existing images */
+.existing-section { background: #151f2b; border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid #1e2d3d; display: none; }
+.existing-section.visible { display: block; }
+.existing-section h3 { color: #e0a030; margin-bottom: 12px; }
+.existing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.existing-item { position: relative; border-radius: 8px; overflow: hidden; border: 1px solid #2a3a4a; }
+.existing-item img { width: 100%; height: 100px; object-fit: cover; display: block; }
+.existing-item .name { font-size: 0.7rem; padding: 4px; color: #8a9a8e; text-align: center; }
+
+/* Progress */
+.progress-bar { width: 100%; height: 6px; background: #1e2d3d; border-radius: 3px; overflow: hidden; margin-top: 12px; display: none; }
+.progress-bar.visible { display: block; }
+.progress-fill { height: 100%; background: #4a7c59; transition: width 0.3s; width: 0%; }
+
+/* Log */
+.log { margin-top: 16px; max-height: 200px; overflow-y: auto; font-size: 0.8rem; font-family: monospace; direction: ltr; text-align: left; }
+.log-item { padding: 3px 8px; border-radius: 4px; margin-bottom: 2px; }
+.log-ok { background: #0a2a1a; color: #7bc67e; }
+.log-err { background: #2a0a0a; color: #e74c3c; }
+.log-info { background: #0a1a2a; color: #5a9aca; }
+
+/* Back link */
+.back-link { display: block; text-align: center; margin-top: 20px; color: #4a7c59; text-decoration: none; font-size: 0.9rem; }
+.back-link:hover { color: #7bc67e; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1>ניהול אתר בוחנים</h1>
+  <p class="subtitle">העלאת תמונות וניהול תוכן</p>
+
+  <!-- Token -->
+  <div class="token-section" id="token-section">
+    <h3>🔑 הגדרת גישה</h3>
+    <p>הכנס את ה-Token של GitHub (נשמר בדפדפן שלך בלבד, לא נשלח לשום מקום אחר)</p>
+    <input type="password" class="token-input" id="token-input" placeholder="ghp_xxxx..." />
+    <div class="token-status" id="token-status"></div>
+  </div>
+
+  <!-- Target -->
+  <div class="target-section">
+    <h3>📁 בחר יעד</h3>
+    <div class="target-grid">
+      <button class="target-btn schedule" data-target="weekly" onclick="selectTarget('weekly')">📋 סידור שבועי</button>
+      <button class="target-btn" data-target="day1" onclick="selectTarget('day1')">יום א'</button>
+      <button class="target-btn" data-target="day2" onclick="selectTarget('day2')">יום ב'</button>
+      <button class="target-btn" data-target="day3" onclick="selectTarget('day3')">יום ג'</button>
+      <button class="target-btn" data-target="day4" onclick="selectTarget('day4')">יום ד'</button>
+      <button class="target-btn" data-target="day5" onclick="selectTarget('day5')">יום ה'</button>
+    </div>
+  </div>
+
+  <!-- Existing images -->
+  <div class="existing-section" id="existing-section">
+    <h3>📸 תמונות קיימות</h3>
+    <div class="existing-grid" id="existing-grid"></div>
+    <button class="btn btn-clear" id="btn-delete-all" onclick="deleteAllExisting()">🗑️ מחק את כל התמונות הקיימות</button>
+  </div>
+
+  <!-- Upload -->
+  <div class="upload-section" id="upload-section">
+    <h3>📤 העלאת תמונות חדשות</h3>
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-zone-icon">📸</div>
+      <p>גרור תמונות לכאן או לחץ לבחירה</p>
+      <small>JPG, JPEG, PNG, WEBP</small>
+    </div>
+    <input type="file" class="file-input" id="file-input" multiple accept="image/*" />
+    <div class="preview-grid" id="preview-grid"></div>
+    <div class="actions">
+      <button class="btn btn-upload" id="btn-upload" onclick="uploadImages()" disabled>📤 העלה תמונות</button>
+    </div>
+    <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
+</div>
+
+<script>
+const OWNER = 'bohanyzahal-cyber';
+const REPO = 'bohan-site';
+const BRANCH = 'main';
+
+let token = localStorage.getItem('gh_token') || '';
+let currentTarget = null;
+let filesToUpload = [];
+let existingFiles = [];
+
+// === TOKEN ===
+const tokenInput = document.getElementById('token-input');
+tokenInput.value = token;
+tokenInput.addEventListener('input', async () => {
+  token = tokenInput.value.trim();
+  localStorage.setItem('gh_token', token);
+  if (token.length > 10) {
+    await verifyToken();
+  }
+});
+
+if (token) verifyToken();
+
+async function verifyToken() {
+  const status = document.getElementById('token-status');
+  try {
+    const resp = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `token ${token}` }
+    });
+    if (resp.ok) {
+      const user = await resp.json();
+      status.innerHTML = `<span class="token-ok">✅ מחובר כ-${user.login}</span>`;
+    } else {
+      status.innerHTML = '<span class="token-bad">❌ Token לא תקין</span>';
+    }
+  } catch {
+    status.innerHTML = '<span class="token-bad">❌ שגיאת חיבור</span>';
+  }
+}
+
+// === TARGET SELECTION ===
+function selectTarget(target) {
+  currentTarget = target;
+  document.querySelectorAll('.target-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-target="${target}"]`).classList.add('active');
+  document.getElementById('upload-section').classList.add('visible');
+  filesToUpload = [];
+  document.getElementById('preview-grid').innerHTML = '';
+  document.getElementById('btn-upload').disabled = true;
+  document.getElementById('log').innerHTML = '';
+  loadExisting();
+}
+
+function getTargetPath() {
+  if (currentTarget === 'weekly') return 'images/weekly';
+  return `images/orders/${currentTarget.replace('day', 'day')}`;
+}
+
+// === LOAD EXISTING ===
+async function loadExisting() {
+  const section = document.getElementById('existing-section');
+  const grid = document.getElementById('existing-grid');
+
+  try {
+    const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${getTargetPath()}?ref=${BRANCH}`, {
+      headers: { Authorization: `token ${token}` }
+    });
+    if (!resp.ok) { section.classList.remove('visible'); return; }
+    const files = await resp.json();
+    existingFiles = Array.isArray(files) ? files.filter(f => /\.(jpg|jpeg|png|webp)$/i.test(f.name)) : [];
+
+    if (existingFiles.length === 0) {
+      section.classList.remove('visible');
+      return;
+    }
+
+    section.classList.add('visible');
+    grid.innerHTML = existingFiles.map(f => `
+      <div class="existing-item">
+        <img src="https://raw.githubusercontent.com/${OWNER}/${REPO}/${BRANCH}/${f.path}" alt="${f.name}" />
+        <div class="name">${f.name}</div>
+      </div>
+    `).join('');
+  } catch {
+    section.classList.remove('visible');
+  }
+}
+
+// === DELETE EXISTING ===
+async function deleteAllExisting() {
+  if (!confirm(`למחוק ${existingFiles.length} תמונות קיימות?`)) return;
+
+  const log = document.getElementById('log');
+  log.innerHTML = '';
+
+  for (const file of existingFiles) {
+    try {
+      const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${file.path}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: `Delete ${file.name}`,
+          sha: file.sha,
+          branch: BRANCH
+        })
+      });
+      if (resp.ok) {
+        addLog(`Deleted: ${file.name}`, 'ok');
+      } else {
+        addLog(`Error deleting ${file.name}`, 'err');
+      }
+    } catch (e) {
+      addLog(`Error: ${e.message}`, 'err');
+    }
+  }
+
+  loadExisting();
+  addLog('Done deleting!', 'info');
+}
+
+// === DRAG & DROP ===
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  addFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => addFiles(fileInput.files));
+
+function addFiles(fileList) {
+  for (const file of fileList) {
+    if (!file.type.startsWith('image/')) continue;
+    filesToUpload.push(file);
+  }
+  renderPreviews();
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = '';
+  filesToUpload.forEach((file, i) => {
+    const div = document.createElement('div');
+    div.className = 'preview-item';
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    const remove = document.createElement('button');
+    remove.className = 'preview-remove';
+    remove.textContent = '×';
+    remove.onclick = () => { filesToUpload.splice(i, 1); renderPreviews(); };
+    const name = document.createElement('div');
+    name.className = 'preview-name';
+    name.textContent = file.name;
+    div.appendChild(remove);
+    div.appendChild(img);
+    div.appendChild(name);
+    grid.appendChild(div);
+  });
+  document.getElementById('btn-upload').disabled = filesToUpload.length === 0;
+}
+
+// === UPLOAD ===
+async function uploadImages() {
+  if (!token) { alert('הכנס Token קודם'); return; }
+  if (!currentTarget) { alert('בחר יעד'); return; }
+  if (filesToUpload.length === 0) return;
+
+  const btn = document.getElementById('btn-upload');
+  btn.disabled = true;
+  btn.textContent = '⏳ מעלה...';
+  const progressBar = document.getElementById('progress-bar');
+  const progressFill = document.getElementById('progress-fill');
+  progressBar.classList.add('visible');
+
+  const total = filesToUpload.length;
+  let done = 0;
+
+  for (const file of filesToUpload) {
+    const fileName = `${done + 1}.${file.name.split('.').pop().toLowerCase()}`;
+    const path = `${getTargetPath()}/${currentTarget === 'weekly' ? 'schedule.' + file.name.split('.').pop().toLowerCase() : fileName}`;
+
+    try {
+      const base64 = await fileToBase64(file);
+
+      // Check if file exists (need sha for update)
+      let sha = null;
+      try {
+        const existing = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+          headers: { Authorization: `token ${token}` }
+        });
+        if (existing.ok) {
+          const data = await existing.json();
+          sha = data.sha;
+        }
+      } catch {}
+
+      const body = {
+        message: `Upload ${path}`,
+        content: base64,
+        branch: BRANCH
+      };
+      if (sha) body.sha = sha;
+
+      const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `token ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (resp.ok) {
+        addLog(`✅ ${path}`, 'ok');
+      } else {
+        const err = await resp.json();
+        addLog(`❌ ${file.name}: ${err.message}`, 'err');
+      }
+    } catch (e) {
+      addLog(`❌ ${file.name}: ${e.message}`, 'err');
+    }
+
+    done++;
+    progressFill.style.width = `${(done / total) * 100}%`;
+  }
+
+  addLog(`🎉 סיום! ${done} תמונות הועלו`, 'info');
+  btn.textContent = '📤 העלה תמונות';
+  filesToUpload = [];
+  document.getElementById('preview-grid').innerHTML = '';
+  btn.disabled = true;
+
+  // Reload existing
+  setTimeout(() => loadExisting(), 2000);
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function addLog(msg, type) {
+  const log = document.getElementById('log');
+  const div = document.createElement('div');
+  div.className = `log-item log-${type}`;
+  div.textContent = msg;
+  log.appendChild(div);
+  log.scrollTop = log.scrollHeight;
+}
+</script>
+</body>
+</html>

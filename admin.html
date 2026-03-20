@@ -360,8 +360,9 @@ async function uploadAll() {
   const totalImages = assigned.length;
   let done = 0;
 
-  // Delete existing images in the lanes we're uploading to
-  for (const lane of Object.keys(groups)) {
+  // Delete ALL existing images (all days + weekly)
+  const allLanes = ['weekly', 'day1', 'day2', 'day3', 'day4', 'day5'];
+  for (const lane of allLanes) {
     const apiPath = lane === 'weekly' ? 'images/weekly' : `images/orders/${lane}`;
     addLog(`Cleaning ${apiPath}...`, 'info');
 

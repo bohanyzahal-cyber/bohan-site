@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>בוחני רישוי צה"ל - סידור עבודה</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  background: #0f1923;
+  color: #e0e0e0;
+  min-height: 100vh;
+}
+
+header {
+  background: linear-gradient(135deg, #1a3a2a 0%, #0f1923 100%);
+  border-bottom: 3px solid #4a7c59;
+  padding: 16px 20px;
+  text-align: center;
+}
+
+header h1 {
+  font-size: 1.4rem;
+  color: #7bc67e;
+  margin-bottom: 4px;
+}
+
+header p {
+  font-size: 0.85rem;
+  color: #8a9a8e;
+}
+
+/* Navigation tabs */
+.nav-tabs {
+  display: flex;
+  background: #151f2b;
+  border-bottom: 2px solid #1e2d3d;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-tab {
+  flex: 1;
+  min-width: 80px;
+  padding: 12px 8px;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7b8d;
+  cursor: pointer;
+  border: none;
+  background: none;
+  transition: all 0.2s;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.nav-tab:hover { color: #a0b0c0; background: #1a2636; }
+.nav-tab.active {
+  color: #7bc67e;
+  border-bottom-color: #4a7c59;
+  background: #1a2636;
+}
+
+/* Sections */
+.section { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
+.section.active { display: block; }
+
+.section-title {
+  font-size: 1.1rem;
+  color: #7bc67e;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #1e2d3d;
+}
+
+/* Weekly schedule image */
+.schedule-img {
+  width: 100%;
+  border-radius: 8px;
+  border: 2px solid #1e2d3d;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.schedule-img:hover { transform: scale(1.01); }
+
+.no-content {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6b7b8d;
+  font-size: 0.95rem;
+  background: #151f2b;
+  border-radius: 8px;
+  border: 1px dashed #2a3a4a;
+}
+
+/* Day tabs for orders */
+.day-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.day-tab {
+  flex: 1;
+  min-width: 60px;
+  padding: 10px 6px;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #8a9a9e;
+  background: #151f2b;
+  border: 1px solid #1e2d3d;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.day-tab:hover { background: #1a2636; color: #b0c0c4; }
+.day-tab.active {
+  background: #1a3a2a;
+  color: #7bc67e;
+  border-color: #4a7c59;
+}
+
+.day-images {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.day-images.active { display: flex; }
+
+.order-img {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid #1e2d3d;
+  cursor: pointer;
+}
+
+/* Links section */
+.links-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #151f2b;
+  border-radius: 8px;
+  border: 1px solid #1e2d3d;
+  text-decoration: none;
+  color: #e0e0e0;
+  transition: all 0.2s;
+}
+
+.link-card:hover {
+  background: #1a2636;
+  border-color: #4a7c59;
+  transform: translateX(-2px);
+}
+
+.link-icon {
+  font-size: 1.8rem;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a3a2a;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.link-text h3 { font-size: 1rem; color: #7bc67e; margin-bottom: 2px; }
+.link-text p { font-size: 0.8rem; color: #6b7b8d; }
+
+/* Locations */
+.locations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.location-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #151f2b;
+  border-radius: 8px;
+  border: 1px solid #1e2d3d;
+}
+
+.location-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.location-time {
+  font-size: 0.8rem;
+  color: #6b7b8d;
+  margin-top: 2px;
+}
+
+.nav-btn {
+  padding: 8px 16px;
+  background: #2d6a4f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.nav-btn:hover { background: #3a8963; }
+
+/* Lightbox */
+.lightbox {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.lightbox.active { display: flex; }
+
+.lightbox img {
+  max-width: 95vw;
+  max-height: 95vh;
+  border-radius: 4px;
+}
+
+.lightbox-close {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  z-index: 1001;
+  background: rgba(0,0,0,0.5);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+
+/* Update banner */
+.update-info {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #4a5a6a;
+  padding: 8px;
+  background: #0a1018;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>בוחני רישוי צה"ל</h1>
+  <p>סידור עבודה שבועי ופקודות יומיות</p>
+</header>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" data-section="schedule">סידור שבועי</button>
+  <button class="nav-tab" data-section="orders">פקודות עבודה</button>
+  <button class="nav-tab" data-section="links">קישורים</button>
+  <button class="nav-tab" data-section="locations">אתרי בחינה</button>
+</nav>
+
+<!-- Section 1: Weekly Schedule -->
+<div class="section active" id="schedule">
+  <h2 class="section-title">סידור עבודה שבועי</h2>
+  <div id="schedule-container"></div>
+</div>
+
+<!-- Section 2: Daily Orders -->
+<div class="section" id="orders">
+  <h2 class="section-title">פקודות עבודה יומיות</h2>
+  <div class="day-tabs">
+    <button class="day-tab active" data-day="1">יום א'</button>
+    <button class="day-tab" data-day="2">יום ב'</button>
+    <button class="day-tab" data-day="3">יום ג'</button>
+    <button class="day-tab" data-day="4">יום ד'</button>
+    <button class="day-tab" data-day="5">יום ה'</button>
+  </div>
+  <div id="orders-container"></div>
+</div>
+
+<!-- Section 3: Links -->
+<div class="section" id="links">
+  <h2 class="section-title">קישורים</h2>
+  <div class="links-grid">
+    <a href="https://docs.google.com/spreadsheets/d/1KAX96KcGNQU7aOS7lf6oMZY-FiDuJ_j5npcDSVfiW5E/edit?usp=sharing" target="_blank" class="link-card">
+      <div class="link-icon">📊</div>
+      <div class="link-text">
+        <h3>גיליון סידור שבועי</h3>
+        <p>Google Sheets - גיליונות לפי שבוע</p>
+      </div>
+    </a>
+    <a href="https://docs.google.com/document/d/1DPThTih7owO0MPX8cSKV2SLQZOQdI4nhLfPDdblD2vo/edit?usp=sharing" target="_blank" class="link-card">
+      <div class="link-icon">📋</div>
+      <div class="link-text">
+        <h3>חלוקה יומית</h3>
+        <p>דף חלוקה יומית</p>
+      </div>
+    </a>
+    <a href="https://docs.google.com/document/d/1tQSRV1Ruy2AAeQgOW9DQt9AdBDos9gLDlJRov5gnOT8/edit?usp=sharing" target="_blank" class="link-card">
+      <div class="link-icon">🗺️</div>
+      <div class="link-text">
+        <h3>קובץ ניווט</h3>
+        <p>כתובות אתרי בחינה לניווט</p>
+      </div>
+    </a>
+    <a href="https://sites.google.com/view/bohanyzahal/%D7%91%D7%99%D7%AA" target="_blank" class="link-card">
+      <div class="link-icon">🏠</div>
+      <div class="link-text">
+        <h3>האתר הקיים</h3>
+        <p>Google Sites - האתר הישן</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- Section 4: Exam Locations -->
+<div class="section" id="locations">
+  <h2 class="section-title">אתרי בחינה - ניווט</h2>
+  <div class="locations-list" id="locations-list"></div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close">&times;</button>
+  <img src="" alt="תמונה מוגדלת" id="lightbox-img">
+</div>
+
+<div class="update-info">
+  עדכון אחרון: <span id="last-update"></span>
+</div>
+
+<script>
+// ===== CONFIG =====
+// GitHub repo details - change these after creating your repo
+const GITHUB_OWNER = 'bohanyzahal-cyber';
+const GITHUB_REPO = 'bohan-site';
+const GITHUB_BRANCH = 'main';
+
+// Exam locations with Waze navigation
+const LOCATIONS = [
+  { name: 'אופקים', driveTime: '1:15', wazeQuery: 'אופקים מגרש טסטים' },
+  { name: 'נתיבות', driveTime: '1:12', wazeQuery: 'נתיבות מגרש טסטים' },
+  { name: 'דימונה', driveTime: '1:24', wazeQuery: 'דימונה מגרש טסטים' },
+  { name: 'באר שבע', driveTime: '1:12', wazeQuery: 'באר שבע מגרש טסטים' },
+  { name: 'נתניה', driveTime: '1:00', wazeQuery: 'נתניה מגרש טסטים' },
+  { name: 'חדרה', driveTime: '0:45', wazeQuery: 'חדרה מגרש טסטים' },
+  { name: 'חיפה', driveTime: '1:00', wazeQuery: 'חיפה מגרש טסטים' },
+  { name: 'עפולה', driveTime: '1:00', wazeQuery: 'עפולה מגרש טסטים' },
+  { name: 'טבריה', driveTime: '1:30', wazeQuery: 'טבריה מגרש טסטים' },
+  { name: 'עכו', driveTime: '1:15', wazeQuery: 'עכו מגרש טסטים' },
+  { name: 'מפרץ (חיפה)', driveTime: '1:15', wazeQuery: 'מפרץ חיפה מגרש טסטים' },
+  { name: 'קרית שמונה', driveTime: '2:00', wazeQuery: 'קרית שמונה מגרש טסטים' },
+  { name: 'ראשון לציון', driveTime: '0:20', wazeQuery: 'ראשון לציון מגרש טסטים' },
+  { name: 'רחובות', driveTime: '0:30', wazeQuery: 'רחובות מגרש טסטים' },
+  { name: 'ירושלים', driveTime: '0:50', wazeQuery: 'ירושלים מגרש טסטים' },
+  { name: 'אשדוד', driveTime: '0:40', wazeQuery: 'אשדוד מגרש טסטים' },
+  { name: 'אשקלון', driveTime: '0:50', wazeQuery: 'אשקלון מגרש טסטים' },
+  { name: 'לוד', driveTime: '0:15', wazeQuery: 'לוד מגרש טסטים' },
+  { name: 'פתח תקווה', driveTime: '0:20', wazeQuery: 'פתח תקווה מגרש טסטים' },
+  { name: 'עפולה צבאי', driveTime: '1:00', wazeQuery: 'מחנה צבאי עפולה' },
+  { name: 'יפו', driveTime: '0:10', wazeQuery: 'יפו מגרש טסטים' },
+  { name: 'בית נבאללה', driveTime: '0:20', wazeQuery: 'בית נבאללה' },
+  { name: 'אילת', driveTime: '3:30', wazeQuery: 'אילת מגרש טסטים' },
+  { name: 'משמר הנגב', driveTime: '1:15', wazeQuery: 'משמר הנגב' },
+  { name: 'קרית גת', driveTime: '0:45', wazeQuery: 'קרית גת מגרש טסטים' },
+];
+
+const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+
+// ===== GITHUB API HELPERS =====
+function ghApiUrl(path) {
+  return `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/contents/${path}?ref=${GITHUB_BRANCH}`;
+}
+
+function ghRawUrl(path) {
+  return `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_BRANCH}/${path}`;
+}
+
+function isImageFile(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  return IMAGE_EXTENSIONS.includes(ext);
+}
+
+async function fetchGitHubDir(path) {
+  try {
+    const resp = await fetch(ghApiUrl(path));
+    if (!resp.ok) return [];
+    const files = await resp.json();
+    return Array.isArray(files) ? files.filter(f => isImageFile(f.name)).sort((a, b) => a.name.localeCompare(b.name)) : [];
+  } catch {
+    return [];
+  }
+}
+
+// ===== NAV TABS =====
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById(tab.dataset.section).classList.add('active');
+  });
+});
+
+// ===== DAY TABS =====
+document.querySelectorAll('.day-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.day-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadDayOrders(tab.dataset.day);
+  });
+});
+
+// ===== LOAD WEEKLY SCHEDULE (GitHub API) =====
+async function loadSchedule() {
+  const container = document.getElementById('schedule-container');
+  container.innerHTML = '<div class="no-content">טוען...</div>';
+
+  const files = await fetchGitHubDir('images/weekly');
+  if (files.length === 0) {
+    // Fallback: try local files (for local testing)
+    loadScheduleLocal();
+    return;
+  }
+
+  container.innerHTML = '';
+  files.forEach(file => {
+    const img = document.createElement('img');
+    img.src = ghRawUrl(file.path);
+    img.className = 'schedule-img';
+    img.alt = 'סידור שבועי';
+    img.onclick = () => openLightbox(img.src);
+    container.appendChild(img);
+  });
+}
+
+function loadScheduleLocal() {
+  const container = document.getElementById('schedule-container');
+  const exts = ['jpeg', 'jpg', 'png'];
+  let tried = 0;
+  for (const ext of exts) {
+    const img = new Image();
+    img.src = `images/weekly/schedule.${ext}`;
+    img.onload = () => {
+      container.innerHTML = '';
+      img.className = 'schedule-img';
+      img.alt = 'סידור שבועי';
+      img.onclick = () => openLightbox(img.src);
+      container.appendChild(img);
+    };
+    img.onerror = () => {
+      tried++;
+      if (tried === exts.length) {
+        container.innerHTML = '<div class="no-content">לא הועלתה תמונת סידור שבועי עדיין.<br>העלה תמונה לתיקייה images/weekly/</div>';
+      }
+    };
+  }
+}
+
+// ===== LOAD DAY ORDERS (GitHub API) =====
+async function loadDayOrders(day) {
+  const container = document.getElementById('orders-container');
+  container.innerHTML = '<div class="no-content">טוען...</div>';
+
+  const files = await fetchGitHubDir(`images/orders/day${day}`);
+  if (files.length === 0) {
+    // Fallback: try local files
+    loadDayOrdersLocal(day);
+    return;
+  }
+
+  container.innerHTML = '';
+  files.forEach(file => {
+    const img = document.createElement('img');
+    img.src = ghRawUrl(file.path);
+    img.className = 'order-img';
+    img.alt = file.name;
+    img.onclick = () => openLightbox(img.src);
+    container.appendChild(img);
+  });
+}
+
+function loadDayOrdersLocal(day) {
+  const container = document.getElementById('orders-container');
+  let found = 0, checked = 0;
+  const total = 10;
+  const images = [];
+
+  for (let i = 1; i <= total; i++) {
+    const idx = i;
+    const exts = ['jpeg', 'jpg', 'png'];
+    let extIdx = 0;
+    function tryExt() {
+      if (extIdx >= exts.length) { checked++; if (checked === total) render(); return; }
+      const img = new Image();
+      img.src = `images/orders/day${day}/${idx}.${exts[extIdx]}`;
+      img.onload = () => { found++; img.className = 'order-img'; img.alt = `פקודת עבודה ${idx}`; img.onclick = () => openLightbox(img.src); images[idx] = img; checked++; if (checked === total) render(); };
+      img.onerror = () => { extIdx++; tryExt(); };
+    }
+    tryExt();
+  }
+
+  function render() {
+    if (found === 0) {
+      container.innerHTML = `<div class="no-content">אין תמונות ליום זה.<br>העלה תמונות לתיקייה images/orders/day${day}/</div>`;
+      return;
+    }
+    container.innerHTML = '';
+    for (let i = 1; i <= total; i++) { if (images[i]) container.appendChild(images[i]); }
+  }
+}
+
+// ===== LOCATIONS =====
+function renderLocations() {
+  const list = document.getElementById('locations-list');
+  const seen = new Set();
+  const unique = LOCATIONS.filter(loc => {
+    if (seen.has(loc.name)) return false;
+    seen.add(loc.name);
+    return true;
+  });
+  list.innerHTML = unique.map(loc => `
+    <div class="location-card">
+      <div>
+        <div class="location-name">${loc.name}</div>
+        <div class="location-time">זמן נסיעה ברכב: ${loc.driveTime} שעות</div>
+      </div>
+      <a href="https://waze.com/ul?q=${encodeURIComponent(loc.wazeQuery)}&navigate=yes"
+         target="_blank" class="nav-btn">
+        נווט ב-Waze
+      </a>
+    </div>
+  `).join('');
+}
+
+// ===== LIGHTBOX =====
+function openLightbox(src) {
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lightbox-img').src = src;
+  lb.classList.add('active');
+}
+
+document.getElementById('lightbox').addEventListener('click', (e) => {
+  if (e.target !== document.getElementById('lightbox-img')) {
+    document.getElementById('lightbox').classList.remove('active');
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('lightbox').classList.remove('active');
+  }
+});
+
+// ===== INIT =====
+loadSchedule();
+loadDayOrders(1);
+renderLocations();
+document.getElementById('last-update').textContent = new Date().toLocaleDateString('he-IL');
+</script>
+</body>
+</html>

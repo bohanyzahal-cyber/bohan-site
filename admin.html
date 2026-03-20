@@ -8,11 +8,11 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
 
-.header { background: #151f2b; padding: 16px; text-align: center; border-bottom: 2px solid #1e2d3d; }
+.header { background: #151f2b; padding: 16px; text-align: center; border-bottom: 2px solid #1e2d3d; position: sticky; top: 0; z-index: 20; }
 .header h1 { color: #7bc67e; font-size: 1.3rem; margin-bottom: 4px; }
 .header p { color: #6b7b8d; font-size: 0.8rem; }
 
-.container { max-width: 900px; margin: 0 auto; padding: 16px; }
+.container { max-width: 700px; margin: 0 auto; padding: 16px; }
 
 /* Token */
 .token-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; background: #151f2b; padding: 12px; border-radius: 8px; border: 1px solid #1e2d3d; }
@@ -20,7 +20,7 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 .token-bar input { flex: 1; padding: 8px 10px; background: #0f1923; border: 1px solid #2a3a4a; border-radius: 6px; color: #e0e0e0; font-size: 0.85rem; direction: ltr; }
 .token-bar .status { font-size: 0.8rem; min-width: 24px; }
 
-/* Steps */
+/* Step box */
 .step { background: #151f2b; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #1e2d3d; }
 .step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .step-num { width: 32px; height: 32px; background: #1a3a2a; color: #7bc67e; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 1rem; flex-shrink: 0; }
@@ -32,28 +32,36 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 .drop-zone-icon { font-size: 2.5rem; margin-bottom: 6px; }
 .file-input { display: none; }
 
-/* Uploaded images pool */
-.pool { display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; padding: 8px; background: #0a1018; border-radius: 8px; margin-top: 10px; }
-.pool:empty::after { content: 'אין תמונות - גרור למעלה'; color: #3a4a5a; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 40px; }
+/* Image cards - each image shown large with day buttons */
+.image-cards { display: flex; flex-direction: column; gap: 16px; margin-top: 16px; }
 
-.thumb { width: 90px; height: 70px; border-radius: 6px; overflow: hidden; cursor: grab; position: relative; border: 2px solid #2a3a4a; transition: all 0.2s; flex-shrink: 0; }
-.thumb:active { cursor: grabbing; }
-.thumb img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.thumb .remove { position: absolute; top: 2px; left: 2px; background: rgba(231,76,60,0.85); color: white; border: none; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-.thumb.dragging { opacity: 0.4; border-color: #4a7c59; }
+.image-card { background: #0f1923; border: 2px solid #1e2d3d; border-radius: 12px; overflow: hidden; transition: border-color 0.2s; }
+.image-card.assigned { border-color: #4a7c59; }
 
-/* Day lanes */
-.lanes { display: flex; flex-direction: column; gap: 10px; }
-.lane { background: #0f1923; border: 2px solid #1e2d3d; border-radius: 10px; padding: 10px; min-height: 80px; transition: all 0.2s; }
-.lane.drag-over { border-color: #4a7c59; background: #1a3a2a22; }
-.lane-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.lane-title { font-weight: 700; font-size: 0.95rem; color: #b0c0c4; }
-.lane-title.weekly { color: #e0a030; }
-.lane-count { font-size: 0.75rem; color: #4a5a6a; }
-.lane-images { display: flex; flex-wrap: wrap; gap: 8px; min-height: 40px; }
-.lane-images:empty::after { content: 'גרור תמונות לכאן'; color: #2a3a4a; font-size: 0.8rem; display: flex; align-items: center; width: 100%; justify-content: center; }
+.image-card img { width: 100%; display: block; cursor: pointer; }
 
-/* Upload button */
+.card-bar { display: flex; align-items: center; gap: 6px; padding: 10px; flex-wrap: wrap; background: #151f2b; }
+.card-bar-label { color: #8a9a8e; font-size: 0.8rem; margin-left: 4px; white-space: nowrap; }
+
+.day-btn { padding: 8px 12px; font-size: 0.85rem; font-weight: 600; border: 2px solid #2a3a4a; border-radius: 8px; background: #0f1923; color: #8a9a9e; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+.day-btn:hover { background: #1a2636; color: #b0c0c4; border-color: #3a4a5a; }
+.day-btn.selected { background: #1a3a2a; color: #7bc67e; border-color: #4a7c59; }
+.day-btn.weekly { color: #e0a030; }
+.day-btn.weekly.selected { background: #3a2a0a; color: #e0a030; border-color: #a07020; }
+
+.card-remove { margin-right: auto; padding: 6px 10px; background: #3a1515; color: #e74c3c; border: 1px solid #5a2020; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+.card-remove:hover { background: #5a2020; }
+
+/* Summary section */
+.summary { background: #151f2b; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #1e2d3d; }
+.summary h3 { color: #7bc67e; margin-bottom: 10px; }
+.summary-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #1e2d3d; font-size: 0.9rem; }
+.summary-row:last-child { border-bottom: none; }
+.summary-day { color: #b0c0c4; }
+.summary-count { color: #7bc67e; font-weight: 600; }
+.summary-count.empty { color: #4a5a6a; }
+
+/* Upload bar */
 .upload-bar { position: sticky; bottom: 0; background: #151f2b; border-top: 2px solid #1e2d3d; padding: 12px 16px; display: flex; gap: 10px; align-items: center; justify-content: center; z-index: 10; }
 .btn { padding: 12px 28px; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
 .btn-upload { background: #2d6a4f; color: white; }
@@ -75,15 +83,23 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 .log-err { background: #2a0a0a; color: #e74c3c; }
 .log-info { background: #0a1a2a; color: #5a9aca; }
 
+/* Lightbox */
+.lightbox { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); z-index: 1000; align-items: center; justify-content: center; cursor: pointer; }
+.lightbox.active { display: flex; }
+.lightbox img { max-width: 95vw; max-height: 95vh; }
+.lightbox-close { position: fixed; top: 12px; left: 12px; color: white; font-size: 2rem; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.5); width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: none; }
+
 .back-link { display: block; text-align: center; padding: 16px; color: #4a7c59; text-decoration: none; font-size: 0.9rem; }
 .back-link:hover { color: #7bc67e; }
+
+.no-images-msg { text-align: center; color: #4a5a6a; padding: 20px; font-size: 0.9rem; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>📤 ניהול אתר בוחנים</h1>
-  <p>העלה תמונות → גרור לימים → לחץ שמור</p>
+  <h1>ניהול אתר בוחנים</h1>
+  <p>העלה תמונות → שייך לימים → שמור</p>
 </div>
 
 <div class="container">
@@ -106,54 +122,46 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
       <p>גרור תמונות לכאן או לחץ לבחירה</p>
     </div>
     <input type="file" class="file-input" id="file-input" multiple accept="image/*" />
-    <div class="pool" id="pool"></div>
   </div>
 
-  <!-- Step 2: Assign to days -->
-  <div class="step">
+  <!-- Step 2: Assign each image -->
+  <div class="step" id="step2" style="display:none;">
     <div class="step-header">
       <div class="step-num">2</div>
-      <div class="step-title">גרור כל תמונה ליום המתאים</div>
+      <div class="step-title">שייך כל תמונה ליום (לחץ על תמונה להגדלה)</div>
     </div>
-    <div class="lanes" id="lanes">
-      <div class="lane" data-lane="weekly">
-        <div class="lane-header"><span class="lane-title weekly">📋 סידור שבועי</span><span class="lane-count" data-count="weekly"></span></div>
-        <div class="lane-images" data-images="weekly"></div>
-      </div>
-      <div class="lane" data-lane="day1">
-        <div class="lane-header"><span class="lane-title">יום א'</span><span class="lane-count" data-count="day1"></span></div>
-        <div class="lane-images" data-images="day1"></div>
-      </div>
-      <div class="lane" data-lane="day2">
-        <div class="lane-header"><span class="lane-title">יום ב'</span><span class="lane-count" data-count="day2"></span></div>
-        <div class="lane-images" data-images="day2"></div>
-      </div>
-      <div class="lane" data-lane="day3">
-        <div class="lane-header"><span class="lane-title">יום ג'</span><span class="lane-count" data-count="day3"></span></div>
-        <div class="lane-images" data-images="day3"></div>
-      </div>
-      <div class="lane" data-lane="day4">
-        <div class="lane-header"><span class="lane-title">יום ד'</span><span class="lane-count" data-count="day4"></span></div>
-        <div class="lane-images" data-images="day4"></div>
-      </div>
-      <div class="lane" data-lane="day5">
-        <div class="lane-header"><span class="lane-title">יום ה'</span><span class="lane-count" data-count="day5"></span></div>
-        <div class="lane-images" data-images="day5"></div>
-      </div>
-    </div>
+    <div class="image-cards" id="image-cards"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary" id="summary" style="display:none;">
+    <h3>📊 סיכום</h3>
+    <div class="summary-row"><span class="summary-day">📋 סידור שבועי</span><span class="summary-count" data-sum="weekly">0</span></div>
+    <div class="summary-row"><span class="summary-day">יום א'</span><span class="summary-count" data-sum="day1">0</span></div>
+    <div class="summary-row"><span class="summary-day">יום ב'</span><span class="summary-count" data-sum="day2">0</span></div>
+    <div class="summary-row"><span class="summary-day">יום ג'</span><span class="summary-count" data-sum="day3">0</span></div>
+    <div class="summary-row"><span class="summary-day">יום ד'</span><span class="summary-count" data-sum="day4">0</span></div>
+    <div class="summary-row"><span class="summary-day">יום ה'</span><span class="summary-count" data-sum="day5">0</span></div>
+    <div class="summary-row" style="border-top: 2px solid #2a3a4a; margin-top: 4px; padding-top: 8px;"><span class="summary-day"><strong>לא משויך</strong></span><span class="summary-count" data-sum="none" style="color: #e74c3c;">0</span></div>
   </div>
 
 </div>
 
 <!-- Sticky upload bar -->
-<div class="upload-bar">
-  <button class="btn btn-clear" onclick="clearAll()">🗑️ נקה הכל</button>
-  <button class="btn btn-upload" id="btn-upload" onclick="uploadAll()" disabled>💾 שמור באתר</button>
+<div class="upload-bar" id="upload-bar" style="display:none;">
+  <button class="btn btn-clear" onclick="clearAll()">🗑️ נקה</button>
+  <button class="btn btn-upload" id="btn-upload" onclick="uploadAll()">💾 שמור באתר</button>
   <span class="upload-status" id="upload-status"></span>
 </div>
 <div class="progress" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
-<div style="max-width:900px;margin:0 auto;padding:0 16px;">
+<div style="max-width:700px;margin:0 auto;padding:0 16px;">
   <div class="log" id="log"></div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img src="" id="lightbox-img" />
 </div>
 
 <a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
@@ -164,8 +172,8 @@ const REPO = 'bohan-site';
 const BRANCH = 'main';
 
 let token = localStorage.getItem('gh_token') || '';
-let imageFiles = new Map(); // id -> { file, blob, url }
-let draggedId = null;
+// Each image: { id, file, url, assignedDay: null|'weekly'|'day1'..'day5' }
+let images = [];
 
 // === TOKEN ===
 const tokenInput = document.getElementById('token-input');
@@ -185,7 +193,7 @@ async function verifyToken() {
   } catch { s.textContent = '❌'; }
 }
 
-// === FILE DROP ===
+// === FILE INPUT ===
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 
@@ -200,163 +208,138 @@ function addFiles(fileList) {
     if (!file.type.startsWith('image/')) continue;
     const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const url = URL.createObjectURL(file);
-    imageFiles.set(id, { file, url });
-    addThumbToPool(id, url);
+    images.push({ id, file, url, assignedDay: null });
   }
-  updateCounts();
+  renderCards();
 }
 
-function addThumbToPool(id, url) {
-  const pool = document.getElementById('pool');
-  pool.appendChild(createThumb(id, url));
+// === RENDER IMAGE CARDS ===
+function renderCards() {
+  const container = document.getElementById('image-cards');
+  const step2 = document.getElementById('step2');
+  const summary = document.getElementById('summary');
+  const uploadBar = document.getElementById('upload-bar');
+
+  if (images.length === 0) {
+    step2.style.display = 'none';
+    summary.style.display = 'none';
+    uploadBar.style.display = 'none';
+    return;
+  }
+
+  step2.style.display = 'block';
+  summary.style.display = 'block';
+  uploadBar.style.display = 'flex';
+
+  container.innerHTML = '';
+
+  images.forEach((img, index) => {
+    const card = document.createElement('div');
+    card.className = 'image-card' + (img.assignedDay ? ' assigned' : '');
+
+    const imgEl = document.createElement('img');
+    imgEl.src = img.url;
+    imgEl.onclick = () => openLightbox(img.url);
+
+    const bar = document.createElement('div');
+    bar.className = 'card-bar';
+
+    const label = document.createElement('span');
+    label.className = 'card-bar-label';
+    label.textContent = `תמונה ${index + 1}:`;
+    bar.appendChild(label);
+
+    const days = [
+      { key: 'weekly', text: 'סידור', cls: 'weekly' },
+      { key: 'day1', text: "א'" },
+      { key: 'day2', text: "ב'" },
+      { key: 'day3', text: "ג'" },
+      { key: 'day4', text: "ד'" },
+      { key: 'day5', text: "ה'" },
+    ];
+
+    days.forEach(day => {
+      const btn = document.createElement('button');
+      btn.className = 'day-btn' + (day.cls ? ' ' + day.cls : '') + (img.assignedDay === day.key ? ' selected' : '');
+      btn.textContent = day.text;
+      btn.onclick = () => {
+        if (img.assignedDay === day.key) {
+          img.assignedDay = null; // toggle off
+        } else {
+          img.assignedDay = day.key;
+        }
+        renderCards();
+      };
+      bar.appendChild(btn);
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'card-remove';
+    removeBtn.textContent = '✕ הסר';
+    removeBtn.onclick = () => {
+      images = images.filter(i => i.id !== img.id);
+      renderCards();
+    };
+    bar.appendChild(removeBtn);
+
+    card.appendChild(imgEl);
+    card.appendChild(bar);
+    container.appendChild(card);
+  });
+
+  updateSummary();
 }
 
-function createThumb(id, url) {
-  const div = document.createElement('div');
-  div.className = 'thumb';
-  div.draggable = true;
-  div.dataset.id = id;
-  div.innerHTML = `<img src="${url}" /><button class="remove" onclick="removeImage('${id}', this.parentElement)">×</button>`;
-
-  // Drag events
-  div.addEventListener('dragstart', e => {
-    draggedId = id;
-    div.classList.add('dragging');
-    e.dataTransfer.effectAllowed = 'move';
-  });
-  div.addEventListener('dragend', () => {
-    div.classList.remove('dragging');
-    draggedId = null;
+function updateSummary() {
+  const counts = { weekly: 0, day1: 0, day2: 0, day3: 0, day4: 0, day5: 0, none: 0 };
+  images.forEach(img => {
+    if (img.assignedDay) counts[img.assignedDay]++;
+    else counts.none++;
   });
 
-  // Touch events for mobile
-  let touchStartX, touchStartY, touchClone;
-  div.addEventListener('touchstart', e => {
-    draggedId = id;
-    const touch = e.touches[0];
-    touchStartX = touch.clientX;
-    touchStartY = touch.clientY;
-  }, { passive: true });
-
-  div.addEventListener('touchmove', e => {
-    e.preventDefault();
-    const touch = e.touches[0];
-    if (!touchClone) {
-      touchClone = div.cloneNode(true);
-      touchClone.style.position = 'fixed';
-      touchClone.style.zIndex = '9999';
-      touchClone.style.opacity = '0.7';
-      touchClone.style.pointerEvents = 'none';
-      document.body.appendChild(touchClone);
-      div.style.opacity = '0.3';
+  Object.entries(counts).forEach(([key, val]) => {
+    const el = document.querySelector(`[data-sum="${key}"]`);
+    if (el) {
+      el.textContent = val > 0 ? `${val} תמונות` : '—';
+      el.classList.toggle('empty', val === 0);
     }
-    touchClone.style.left = (touch.clientX - 45) + 'px';
-    touchClone.style.top = (touch.clientY - 35) + 'px';
-
-    // Highlight lane under finger
-    document.querySelectorAll('.lane').forEach(l => l.classList.remove('drag-over'));
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const lane = el?.closest('.lane');
-    if (lane) lane.classList.add('drag-over');
-  }, { passive: false });
-
-  div.addEventListener('touchend', e => {
-    if (touchClone) {
-      touchClone.remove();
-      touchClone = null;
-    }
-    div.style.opacity = '1';
-    document.querySelectorAll('.lane').forEach(l => l.classList.remove('drag-over'));
-
-    const touch = e.changedTouches[0];
-    const el = document.elementFromPoint(touch.clientX, touch.clientY);
-    const lane = el?.closest('.lane');
-    if (lane) {
-      const imagesDiv = lane.querySelector('.lane-images');
-      imagesDiv.appendChild(div);
-      updateCounts();
-    }
-    draggedId = null;
   });
 
-  return div;
+  const assigned = images.filter(i => i.assignedDay).length;
+  document.getElementById('upload-status').textContent = `${assigned}/${images.length} משויכות`;
 }
 
-function removeImage(id, element) {
-  imageFiles.delete(id);
-  element.remove();
-  updateCounts();
+// === LIGHTBOX ===
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('active');
 }
-
-// === LANE DROP TARGETS ===
-document.querySelectorAll('.lane').forEach(lane => {
-  lane.addEventListener('dragover', e => { e.preventDefault(); lane.classList.add('drag-over'); });
-  lane.addEventListener('dragleave', () => lane.classList.remove('drag-over'));
-  lane.addEventListener('drop', e => {
-    e.preventDefault();
-    lane.classList.remove('drag-over');
-    if (!draggedId) return;
-    const thumb = document.querySelector(`[data-id="${draggedId}"]`);
-    if (thumb) {
-      lane.querySelector('.lane-images').appendChild(thumb);
-      updateCounts();
-    }
-  });
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+}
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target !== document.getElementById('lightbox-img')) closeLightbox();
 });
-
-// Also allow dropping back to pool
-const pool = document.getElementById('pool');
-pool.addEventListener('dragover', e => { e.preventDefault(); });
-pool.addEventListener('drop', e => {
-  e.preventDefault();
-  if (!draggedId) return;
-  const thumb = document.querySelector(`[data-id="${draggedId}"]`);
-  if (thumb) { pool.appendChild(thumb); updateCounts(); }
-});
-
-function updateCounts() {
-  ['weekly','day1','day2','day3','day4','day5'].forEach(lane => {
-    const images = document.querySelector(`[data-images="${lane}"]`);
-    const count = document.querySelector(`[data-count="${lane}"]`);
-    const n = images ? images.querySelectorAll('.thumb').length : 0;
-    count.textContent = n > 0 ? `${n} תמונות` : '';
-  });
-
-  // Enable upload if any lane has images
-  const total = document.querySelectorAll('.lane-images .thumb').length;
-  document.getElementById('btn-upload').disabled = total === 0;
-  document.getElementById('upload-status').textContent = total > 0 ? `${total} תמונות מוכנות` : '';
-}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // === CLEAR ALL ===
 function clearAll() {
   if (!confirm('למחוק את כל התמונות מהדף?')) return;
-  imageFiles.clear();
-  document.getElementById('pool').innerHTML = '';
-  document.querySelectorAll('.lane-images').forEach(l => l.innerHTML = '');
-  updateCounts();
+  images = [];
+  renderCards();
 }
 
 // === UPLOAD ALL ===
 async function uploadAll() {
   if (!token) { alert('הכנס Token קודם'); return; }
 
-  const lanes = ['weekly','day1','day2','day3','day4','day5'];
-  const assignments = {};
-  let totalImages = 0;
+  const assigned = images.filter(i => i.assignedDay);
+  const unassigned = images.filter(i => !i.assignedDay);
 
-  for (const lane of lanes) {
-    const thumbs = document.querySelector(`[data-images="${lane}"]`).querySelectorAll('.thumb');
-    if (thumbs.length > 0) {
-      assignments[lane] = [];
-      thumbs.forEach(t => {
-        assignments[lane].push(t.dataset.id);
-        totalImages++;
-      });
-    }
+  if (assigned.length === 0) { alert('שייך לפחות תמונה אחת ליום'); return; }
+  if (unassigned.length > 0) {
+    if (!confirm(`יש ${unassigned.length} תמונות לא משויכות. להמשיך בלעדיהן?`)) return;
   }
-
-  if (totalImages === 0) { alert('גרור תמונות לימים קודם'); return; }
 
   const btn = document.getElementById('btn-upload');
   btn.disabled = true;
@@ -367,10 +350,18 @@ async function uploadAll() {
   const log = document.getElementById('log');
   log.innerHTML = '';
 
+  // Group by day
+  const groups = {};
+  assigned.forEach(img => {
+    if (!groups[img.assignedDay]) groups[img.assignedDay] = [];
+    groups[img.assignedDay].push(img);
+  });
+
+  const totalImages = assigned.length;
   let done = 0;
 
-  // First delete existing images in assigned lanes
-  for (const lane of Object.keys(assignments)) {
+  // Delete existing images in the lanes we're uploading to
+  for (const lane of Object.keys(groups)) {
     const apiPath = lane === 'weekly' ? 'images/weekly' : `images/orders/${lane}`;
     addLog(`Cleaning ${apiPath}...`, 'info');
 
@@ -399,22 +390,19 @@ async function uploadAll() {
   }
 
   // Upload new images
-  for (const [lane, ids] of Object.entries(assignments)) {
-    for (let i = 0; i < ids.length; i++) {
-      const id = ids[i];
-      const data = imageFiles.get(id);
-      if (!data) continue;
-
-      const ext = data.file.name.split('.').pop().toLowerCase();
+  for (const [lane, imgs] of Object.entries(groups)) {
+    for (let i = 0; i < imgs.length; i++) {
+      const img = imgs[i];
+      const ext = img.file.name.split('.').pop().toLowerCase();
       let path;
       if (lane === 'weekly') {
-        path = ids.length === 1 ? `images/weekly/schedule.${ext}` : `images/weekly/${i + 1}.${ext}`;
+        path = imgs.length === 1 ? `images/weekly/schedule.${ext}` : `images/weekly/${i + 1}.${ext}`;
       } else {
         path = `images/orders/${lane}/${i + 1}.${ext}`;
       }
 
       try {
-        const base64 = await fileToBase64(data.file);
+        const base64 = await fileToBase64(img.file);
         const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${path}`, {
           method: 'PUT',
           headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },

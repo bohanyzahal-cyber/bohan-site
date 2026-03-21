@@ -360,11 +360,14 @@ async function uploadAll() {
   const totalImages = assigned.length;
   let done = 0;
 
-  // Delete ALL existing images (all days + weekly)
+  // Archive existing images before deleting
+  const today = new Date();
+  const archiveDate = today.toISOString().split('T')[0]; // YYYY-MM-DD
+  addLog('Archiving old images to ' + archiveDate + '...', 'info');
+
   const allLanes = ['weekly', 'day1', 'day2', 'day3', 'day4', 'day5'];
   for (const lane of allLanes) {
     const apiPath = lane === 'weekly' ? 'images/weekly' : `images/orders/${lane}`;
-    addLog(`Cleaning ${apiPath}...`, 'info');
 
     try {
       const resp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${apiPath}?ref=${BRANCH}`, {
@@ -375,18 +378,43 @@ async function uploadAll() {
         if (Array.isArray(files)) {
           for (const file of files) {
             if (/\.(jpg|jpeg|png|webp)$/i.test(file.name)) {
+              // Copy to archive
+              const archivePath = lane === 'weekly'
+                ? `images/archive/${archiveDate}/weekly/${file.name}`
+                : `images/archive/${archiveDate}/${lane}/${file.name}`;
+
+              try {
+                // Get file content
+                const fileResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${file.path}?ref=${BRANCH}`, {
+                  headers: { Authorization: `token ${token}` }
+                });
+                const fileData = await fileResp.json();
+
+                // Save to archive
+                await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${archivePath}`, {
+                  method: 'PUT',
+                  headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: `Archive ${file.name}`, content: fileData.content.replace(/
+/g, ''), branch: BRANCH })
+                });
+                addLog('Archived: ' + file.name, 'info');
+              } catch (ae) {
+                addLog('Archive warning: ' + ae.message, 'err');
+              }
+
+              // Delete original
               await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${file.path}`, {
                 method: 'DELETE',
                 headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: `Delete ${file.name}`, sha: file.sha, branch: BRANCH })
               });
-              addLog(`Deleted old: ${file.name}`, 'info');
+              addLog('Deleted old: ' + file.name, 'info');
             }
           }
         }
       }
     } catch (e) {
-      addLog(`Warning: ${e.message}`, 'err');
+      addLog('Warning: ' + e.message, 'err');
     }
   }
 

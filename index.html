@@ -269,6 +269,20 @@ header p {
 
 .lightbox-print:hover { background: #3a8963; }
 
+.lightbox-crop {
+  position: fixed; top: 12px; right: 130px;
+  color: white; font-size: 1rem; cursor: pointer; z-index: 1001;
+  background: #2d6a4f; padding: 8px 16px; border-radius: 8px; border: none; font-weight: 600;
+}
+.lightbox-crop:hover { background: #3a8963; }
+.crop-overlay { position: fixed; top:0;left:0;right:0;bottom:0; z-index:1002; cursor:crosshair; }
+.crop-selection { position:absolute; border:3px dashed #7bc67e; background:rgba(123,198,126,0.15); z-index:1003; }
+.crop-instructions { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.8); color:white; padding:12px 24px; border-radius:8px; font-size:1rem; z-index:1004; text-align:center; }
+.crop-actions { position:fixed; bottom:70px; left:50%; transform:translateX(-50%); z-index:1004; display:flex; gap:12px; }
+.crop-actions button { padding:10px 20px; border:none; border-radius:8px; font-size:1rem; font-weight:600; cursor:pointer; }
+.crop-btn-print { background:#2d6a4f; color:white; }
+.crop-btn-cancel { background:#444; color:white; }
+
 @media print {
   body * { display: none !important; }
   #print-container, #print-container img {
@@ -404,6 +418,7 @@ header p {
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close">&times;</button>
   <button class="lightbox-print" onclick="printImage()">🖨️ הדפס</button>
+  <button class="lightbox-crop" onclick="startCrop()">✂️ בחר אזור</button>
   <img src="" alt="תמונה מוגדלת" id="lightbox-img">
 </div>
 
@@ -662,6 +677,85 @@ function printImage() {
       if (img.complete && img.naturalWidth > 0) { doPrint(); }
       else { img.onload = doPrint; }
     });
+}
+
+// ===== CROP & PRINT =====
+let cropState = {};
+
+function startCrop() {
+  var lb = document.getElementById('lightbox');
+  var overlay = document.createElement('div');
+  overlay.className = 'crop-overlay';
+  var inst = document.createElement('div');
+  inst.className = 'crop-instructions';
+  inst.textContent = 'גרור אצבע על האזור שרוצים להדפיס';
+  lb.appendChild(overlay);
+  lb.appendChild(inst);
+  cropState = {overlay: overlay, inst: inst};
+  var sel = null, sx, sy;
+
+  function gp(e) { var t = e.touches ? e.touches[0] : e; return {x:t.clientX, y:t.clientY}; }
+
+  function onS(e) {
+    e.preventDefault(); var p = gp(e); sx = p.x; sy = p.y;
+    if (sel) sel.remove();
+    sel = document.createElement('div'); sel.className = 'crop-selection'; overlay.appendChild(sel);
+  }
+  function onM(e) {
+    if (!sel || sx === undefined) return; e.preventDefault();
+    var p = gp(e);
+    sel.style.left = Math.min(sx,p.x)+'px'; sel.style.top = Math.min(sy,p.y)+'px';
+    sel.style.width = Math.abs(p.x-sx)+'px'; sel.style.height = Math.abs(p.y-sy)+'px';
+  }
+  function onE(e) {
+    if (!sel) return;
+    var r = sel.getBoundingClientRect();
+    if (r.width < 20 || r.height < 20) return;
+    inst.textContent = '';
+    var acts = document.createElement('div'); acts.className = 'crop-actions';
+    acts.innerHTML = '<button class="crop-btn-print" onclick="cropPrint()">🖨️ הדפס בחירה</button> <button class="crop-btn-cancel" onclick="cancelCrop()">❌ ביטול</button>';
+    lb.appendChild(acts); cropState.acts = acts;
+    var img = document.getElementById('lightbox-img');
+    var ir = img.getBoundingClientRect();
+    var scX = img.naturalWidth / ir.width, scY = img.naturalHeight / ir.height;
+    cropState.crop = {x:(r.left-ir.left)*scX, y:(r.top-ir.top)*scY, w:r.width*scX, h:r.height*scY};
+    overlay.onmousedown = overlay.onmousemove = overlay.onmouseup = null;
+    overlay.ontouchstart = overlay.ontouchmove = overlay.ontouchend = null;
+    overlay.style.pointerEvents = 'none';
+  }
+
+  overlay.onmousedown = onS; overlay.onmousemove = onM; overlay.onmouseup = onE;
+  overlay.ontouchstart = function(e){e.preventDefault();onS(e);}; overlay.ontouchmove = function(e){e.preventDefault();onM(e);}; overlay.ontouchend = onE;
+}
+
+function cropPrint() {
+  var img = document.getElementById('lightbox-img');
+  var c = cropState.crop;
+  var canvas = document.createElement('canvas');
+  canvas.width = c.w; canvas.height = c.h;
+  canvas.getContext('2d').drawImage(img, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+  canvas.toBlob(function(blob) {
+    var blobUrl = URL.createObjectURL(blob);
+    var iframe = document.getElementById('print-frame');
+    if (iframe) iframe.remove();
+    iframe = document.createElement('iframe'); iframe.id = 'print-frame';
+    iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:white;';
+    document.body.appendChild(iframe);
+    var doc = iframe.contentDocument; doc.open();
+    doc.write('<html><head><style>@page{margin:5mm}body{margin:0;display:flex;justify-content:center;align-items:start}img{max-width:100%;height:auto}</style></head><body><img src="'+blobUrl+'"></body></html>');
+    doc.close();
+    var pImg = doc.querySelector('img');
+    var dp = function(){setTimeout(function(){iframe.contentWindow.print();setTimeout(function(){iframe.remove();URL.revokeObjectURL(blobUrl);},1000);},500);};
+    if (pImg.complete && pImg.naturalWidth > 0) dp(); else pImg.onload = dp;
+    cancelCrop();
+  }, 'image/png');
+}
+
+function cancelCrop() {
+  if (cropState.overlay) cropState.overlay.remove();
+  if (cropState.inst) cropState.inst.remove();
+  if (cropState.acts) cropState.acts.remove();
+  cropState = {};
 }
 
 // ===== INIT =====

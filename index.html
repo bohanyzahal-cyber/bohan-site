@@ -252,6 +252,36 @@ header p {
   border-radius: 4px;
 }
 
+.lightbox-print {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  z-index: 1001;
+  background: #2d6a4f;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 600;
+}
+
+.lightbox-print:hover { background: #3a8963; }
+
+@media print {
+  body * { display: none !important; }
+  #print-container, #print-container img {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+}
+
 .lightbox-close {
   position: fixed;
   top: 12px;
@@ -373,6 +403,7 @@ header p {
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close">&times;</button>
+  <button class="lightbox-print" onclick="printImage()">🖨️ הדפס</button>
   <img src="" alt="תמונה מוגדלת" id="lightbox-img">
 </div>
 
@@ -602,6 +633,14 @@ document.addEventListener('keydown', (e) => {
     document.getElementById('lightbox').classList.remove('active');
   }
 });
+
+// ===== PRINT =====
+function printImage() {
+  const imgSrc = document.getElementById('lightbox-img').src;
+  const printWin = window.open('', '_blank');
+  printWin.document.write('<html><head><title>הדפסה</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="' + imgSrc + '" onload="window.print();window.close()"></body></html>');
+  printWin.document.close();
+}
 
 // ===== INIT =====
 loadSchedule();

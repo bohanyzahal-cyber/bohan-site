@@ -417,8 +417,8 @@ header p {
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close">&times;</button>
-  <button class="lightbox-print" onclick="printImage()">🖨️ הדפס</button>
-  <button class="lightbox-crop" onclick="startCrop()">✂️ בחר אזור</button>
+  <button class="lightbox-print" onclick="event.stopPropagation();printImage()">🖨️ הדפס</button>
+  <button class="lightbox-crop" onclick="event.stopPropagation();startCrop()">✂️ בחר אזור</button>
   <img src="" alt="תמונה מוגדלת" id="lightbox-img">
 </div>
 
@@ -638,7 +638,8 @@ function openLightbox(src) {
 }
 
 document.getElementById('lightbox').addEventListener('click', (e) => {
-  if (e.target !== document.getElementById('lightbox-img')) {
+  if (e.target === document.getElementById('lightbox') || e.target.classList.contains('lightbox-close')) {
+    cancelCrop();
     document.getElementById('lightbox').classList.remove('active');
   }
 });
@@ -713,7 +714,7 @@ function startCrop() {
     if (r.width < 20 || r.height < 20) return;
     inst.textContent = '';
     var acts = document.createElement('div'); acts.className = 'crop-actions';
-    acts.innerHTML = '<button class="crop-btn-print" onclick="cropPrint()">🖨️ הדפס בחירה</button> <button class="crop-btn-cancel" onclick="cancelCrop()">❌ ביטול</button>';
+    acts.innerHTML = '<button class="crop-btn-print" onclick="event.stopPropagation();cropPrint()">🖨️ הדפס בחירה</button> <button class="crop-btn-cancel" onclick="event.stopPropagation();cancelCrop()">❌ ביטול</button>';
     lb.appendChild(acts); cropState.acts = acts;
     var img = document.getElementById('lightbox-img');
     var ir = img.getBoundingClientRect();

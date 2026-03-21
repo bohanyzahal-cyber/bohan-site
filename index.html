@@ -637,9 +637,22 @@ document.addEventListener('keydown', (e) => {
 // ===== PRINT =====
 function printImage() {
   const imgSrc = document.getElementById('lightbox-img').src;
-  const printWin = window.open('', '_blank');
-  printWin.document.write('<html><head><title>הדפסה</title><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh}img{max-width:100%;max-height:100vh;object-fit:contain}</style></head><body><img src="' + imgSrc + '" onload="window.print();window.close()"></body></html>');
-  printWin.document.close();
+  // Create hidden iframe for printing
+  let iframe = document.getElementById('print-frame');
+  if (iframe) iframe.remove();
+  iframe = document.createElement('iframe');
+  iframe.id = 'print-frame';
+  iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:-1;opacity:0;';
+  document.body.appendChild(iframe);
+  const doc = iframe.contentDocument;
+  doc.open();
+  doc.write('<html><head><style>@page{margin:5mm}body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh}img{max-width:100%;max-height:95vh;object-fit:contain}</style></head><body><img src="' + imgSrc + '"></body></html>');
+  doc.close();
+  iframe.contentWindow.onafterprint = function() { iframe.remove(); };
+  // Wait for image to load then print
+  const img = doc.querySelector('img');
+  if (img.complete) { iframe.contentWindow.print(); }
+  else { img.onload = function() { iframe.contentWindow.print(); }; }
 }
 
 // ===== INIT =====

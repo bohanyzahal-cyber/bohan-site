@@ -314,6 +314,23 @@ header p {
   border: none;
 }
 
+.archive-weeks { display: flex; flex-direction: column; gap: 8px; }
+.archive-week-btn {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; background: #151f2b; border-radius: 8px;
+  border: 1px solid #1e2d3d; cursor: pointer; transition: all 0.2s;
+  font-size: 1rem; color: #e0e0e0; width: 100%;
+}
+.archive-week-btn:hover { background: #1a2636; border-color: #4a7c59; }
+.archive-week-btn span { color: #6b7b8d; font-size: 0.85rem; }
+.archive-back {
+  background: none; border: 1px solid #2a3a4a; color: #7bc67e; padding: 8px 16px;
+  border-radius: 8px; cursor: pointer; font-size: 0.9rem; margin-bottom: 12px;
+}
+.archive-back:hover { background: #1a3a2a; }
+.archive-week-title { color: #7bc67e; margin-bottom: 12px; font-size: 1.1rem; }
+.archive-loading { text-align: center; color: #6b7b8d; padding: 20px; }
+
 /* Update banner */
 .update-info {
   text-align: center;
@@ -334,6 +351,7 @@ header p {
 <nav class="nav-tabs">
   <button class="nav-tab active" data-section="schedule">סידור שבועי</button>
   <button class="nav-tab" data-section="orders">פקודות עבודה</button>
+  <button class="nav-tab" data-section="archive">שבועות קודמים</button>
   <button class="nav-tab" data-section="links">קישורים</button>
   <button class="nav-tab" data-section="locations">אתרי בחינה</button>
 </nav>
@@ -355,6 +373,25 @@ header p {
     <button class="day-tab" data-day="5">יום ה'</button>
   </div>
   <div id="orders-container"></div>
+</div>
+
+<!-- Section: Archive -->
+<div class="section" id="archive">
+  <h2 class="section-title">שבועות קודמים</h2>
+  <div id="archive-weeks" class="archive-weeks"></div>
+  <div id="archive-content" style="display:none;">
+    <button class="archive-back" onclick="showArchiveList()">← חזרה לרשימה</button>
+    <h3 class="archive-week-title" id="archive-week-title"></h3>
+    <div id="archive-schedule-container" style="margin-bottom:16px;"></div>
+    <div class="day-tabs" id="archive-day-tabs">
+      <button class="day-tab active" onclick="loadArchiveDay(1)">יום א'</button>
+      <button class="day-tab" onclick="loadArchiveDay(2)">יום ב'</button>
+      <button class="day-tab" onclick="loadArchiveDay(3)">יום ג'</button>
+      <button class="day-tab" onclick="loadArchiveDay(4)">יום ד'</button>
+      <button class="day-tab" onclick="loadArchiveDay(5)">יום ה'</button>
+    </div>
+    <div id="archive-orders-container"></div>
+  </div>
 </div>
 
 <!-- Section 3: Links -->
@@ -773,9 +810,95 @@ function cancelCrop() {
   cropState = {};
 }
 
+// ===== ARCHIVE =====
+let currentArchiveWeek = '';
+
+async function loadArchiveWeeks() {
+  var container = document.getElementById('archive-weeks');
+  container.innerHTML = '<div class="archive-loading">טוען...</div>';
+  try {
+    var resp = await fetch(ghApiUrl('images/archive'));
+    if (!resp.ok) {
+      container.innerHTML = '<div class="no-content">אין ארכיון עדיין. שבועות קודמים יופיעו כאן לאחר העלאת פקודות חדשות.</div>';
+      return;
+    }
+    var weeks = await resp.json();
+    if (!Array.isArray(weeks) || weeks.length === 0) {
+      container.innerHTML = '<div class="no-content">אין ארכיון עדיין.</div>';
+      return;
+    }
+    weeks.sort(function(a,b){ return b.name.localeCompare(a.name); });
+    container.innerHTML = '';
+    weeks.forEach(function(week) {
+      var btn = document.createElement('button');
+      btn.className = 'archive-week-btn';
+      var parts = week.name.split('-');
+      var dateStr = parts[2] + '/' + parts[1] + '/' + parts[0];
+      btn.innerHTML = '<strong>שבוע ' + dateStr + '</strong><span>צפייה ←</span>';
+      btn.onclick = function(){ openArchiveWeek(week.name); };
+      container.appendChild(btn);
+    });
+  } catch(e) {
+    container.innerHTML = '<div class="no-content">שגיאה בטעינת ארכיון.</div>';
+  }
+}
+
+function showArchiveList() {
+  document.getElementById('archive-content').style.display = 'none';
+  document.getElementById('archive-weeks').style.display = 'flex';
+}
+
+async function openArchiveWeek(weekName) {
+  currentArchiveWeek = weekName;
+  document.getElementById('archive-weeks').style.display = 'none';
+  document.getElementById('archive-content').style.display = 'block';
+  var parts = weekName.split('-');
+  document.getElementById('archive-week-title').textContent = 'שבוע ' + parts[2] + '/' + parts[1] + '/' + parts[0];
+  var schedCont = document.getElementById('archive-schedule-container');
+  schedCont.innerHTML = '';
+  var schedFiles = await fetchGitHubDir('images/archive/' + weekName + '/weekly');
+  if (schedFiles.length > 0) {
+    var h = document.createElement('h4');
+    h.style.cssText = 'color:#e0a030;margin-bottom:8px;';
+    h.textContent = 'סידור שבועי';
+    schedCont.appendChild(h);
+    schedFiles.forEach(function(file) {
+      var img = document.createElement('img');
+      img.src = ghRawUrl(file.path);
+      img.className = 'schedule-img';
+      img.onclick = function(){ openLightbox(img.src); };
+      schedCont.appendChild(img);
+    });
+  }
+  var tabs = document.querySelectorAll('#archive-day-tabs .day-tab');
+  tabs.forEach(function(t,i){ t.classList.toggle('active', i===0); });
+  loadArchiveDay(1);
+}
+
+async function loadArchiveDay(day) {
+  var tabs = document.querySelectorAll('#archive-day-tabs .day-tab');
+  tabs.forEach(function(t,i){ t.classList.toggle('active', i===day-1); });
+  var container = document.getElementById('archive-orders-container');
+  container.innerHTML = '<div class="archive-loading">טוען...</div>';
+  var files = await fetchGitHubDir('images/archive/' + currentArchiveWeek + '/day' + day);
+  if (files.length === 0) {
+    container.innerHTML = '<div class="no-content">אין תמונות ליום זה.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  files.forEach(function(file) {
+    var img = document.createElement('img');
+    img.src = ghRawUrl(file.path);
+    img.className = 'order-img';
+    img.onclick = function(){ openLightbox(img.src); };
+    container.appendChild(img);
+  });
+}
+
 // ===== INIT =====
 loadSchedule();
 loadDayOrders(1);
+loadArchiveWeeks();
 renderLocations();
 document.getElementById('last-update').textContent = new Date().toLocaleDateString('he-IL');
 </script>

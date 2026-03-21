@@ -632,8 +632,10 @@ function renderLocations() {
 
 // ===== LIGHTBOX =====
 function openLightbox(src) {
-  const lb = document.getElementById('lightbox');
-  document.getElementById('lightbox-img').src = src;
+  var lb = document.getElementById('lightbox');
+  var img = document.getElementById('lightbox-img');
+  img.crossOrigin = 'anonymous';
+  img.src = src;
   lb.classList.add('active');
 }
 
@@ -730,26 +732,38 @@ function startCrop() {
 }
 
 function cropPrint() {
-  var img = document.getElementById('lightbox-img');
+  var imgEl = document.getElementById('lightbox-img');
   var c = cropState.crop;
-  var canvas = document.createElement('canvas');
-  canvas.width = c.w; canvas.height = c.h;
-  canvas.getContext('2d').drawImage(img, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
-  canvas.toBlob(function(blob) {
-    var blobUrl = URL.createObjectURL(blob);
-    var iframe = document.getElementById('print-frame');
-    if (iframe) iframe.remove();
-    iframe = document.createElement('iframe'); iframe.id = 'print-frame';
-    iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:white;';
-    document.body.appendChild(iframe);
-    var doc = iframe.contentDocument; doc.open();
-    doc.write('<html><head><style>@page{margin:5mm}body{margin:0;display:flex;justify-content:center;align-items:start}img{max-width:100%;height:auto}</style></head><body><img src="'+blobUrl+'"></body></html>');
-    doc.close();
-    var pImg = doc.querySelector('img');
-    var dp = function(){setTimeout(function(){iframe.contentWindow.print();setTimeout(function(){iframe.remove();URL.revokeObjectURL(blobUrl);},1000);},500);};
-    if (pImg.complete && pImg.naturalWidth > 0) dp(); else pImg.onload = dp;
-    cancelCrop();
-  }, 'image/png');
+  
+  fetch(imgEl.src)
+    .then(function(r){ return r.blob(); })
+    .then(function(blob){
+      return createImageBitmap(blob);
+    })
+    .then(function(bmp){
+      var canvas = document.createElement('canvas');
+      canvas.width = c.w; canvas.height = c.h;
+      canvas.getContext('2d').drawImage(bmp, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+      canvas.toBlob(function(outBlob) {
+        var blobUrl = URL.createObjectURL(outBlob);
+        var iframe = document.getElementById('print-frame');
+        if (iframe) iframe.remove();
+        iframe = document.createElement('iframe'); iframe.id = 'print-frame';
+        iframe.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;border:none;z-index:9999;background:white;';
+        document.body.appendChild(iframe);
+        var doc = iframe.contentDocument; doc.open();
+        doc.write('<html><head><style>@page{margin:5mm}body{margin:0;display:flex;justify-content:center;align-items:start}img{max-width:100%;height:auto}</style></head><body><img src="'+blobUrl+'"></body></html>');
+        doc.close();
+        var pImg = doc.querySelector('img');
+        var dp = function(){setTimeout(function(){iframe.contentWindow.print();setTimeout(function(){iframe.remove();URL.revokeObjectURL(blobUrl);},1000);},500);};
+        if (pImg.complete && pImg.naturalWidth > 0) dp(); else pImg.onload = dp;
+        cancelCrop();
+      }, 'image/png');
+    })
+    .catch(function(err){
+      alert('שגיאה בהדפסה: ' + err.message);
+      cancelCrop();
+    });
 }
 
 function cancelCrop() {

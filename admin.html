@@ -166,6 +166,7 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 
 <a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
 
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const OWNER = 'bohanyzahal-cyber';
 const REPO = 'bohan-site';
@@ -453,7 +454,11 @@ async function uploadAll() {
     }
   }
 
-  addLog(`🎉 סיום! ${done} תמונות הועלו בהצלחה`, 'info');
+  addLog(`🎉 ${done} תמונות הועלו בהצלחה. מתחיל זיהוי שמות...`, 'info');
+
+  // === OCR STEP: Identify examiner names in uploaded images ===
+  await runOcrOnUploadedImages(groups);
+
   btn.textContent = '💾 שמור באתר';
   btn.disabled = false;
   document.getElementById('upload-status').textContent = '✅ הועלה בהצלחה!';
@@ -475,6 +480,158 @@ function addLog(msg, type) {
   div.textContent = msg;
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
+}
+
+// === EXAMINER NAMES FOR OCR ===
+const EXAMINER_NAMES = [
+  'אללוף יצחק',
+  'גיטלמן ויטלי',
+  'אלבלה אברהם',
+  'נגאוקר שמשון',
+  'מלל דרור',
+  'קורנבליט אלכס',
+  'שרון צרימי',
+  'יניר נאוגאוקר',
+  'פלס דוד',
+  'לוי בנימין',
+  'רון יהוד'
+];
+
+// Build last-name lookup for fuzzy matching
+const EXAMINER_LAST_NAMES = EXAMINER_NAMES.map(name => {
+  const parts = name.split(' ');
+  return { fullName: name, lastName: parts[0], firstName: parts.length > 1 ? parts[1] : '' };
+});
+
+function findExaminersInText(ocrText) {
+  const found = [];
+  const text = ocrText.replace(/\n/g, ' ');
+  for (const ex of EXAMINER_LAST_NAMES) {
+    // Try full name first, then last name only
+    if (text.includes(ex.fullName) || text.includes(ex.lastName)) {
+      found.push(ex.fullName);
+    }
+  }
+  return found;
+}
+
+async function runOcrOnUploadedImages(groups) {
+  const statusEl = document.getElementById('upload-status');
+  statusEl.textContent = 'מזהה שמות בוחנים...';
+  addLog('מתחיל זיהוי שמות בוחנים בתמונות...', 'info');
+
+  // Collect all uploaded image paths and their File objects
+  const imageEntries = []; // { path, file }
+  for (const [lane, imgs] of Object.entries(groups)) {
+    for (let i = 0; i < imgs.length; i++) {
+      const img = imgs[i];
+      const ext = img.file.name.split('.').pop().toLowerCase();
+      let path;
+      if (lane === 'weekly') {
+        path = imgs.length === 1 ? `images/weekly/schedule.${ext}` : `images/weekly/${i + 1}.${ext}`;
+      } else {
+        path = `images/orders/${lane}/${i + 1}.${ext}`;
+      }
+      // Only process order images (not weekly schedule)
+      if (lane !== 'weekly') {
+        imageEntries.push({ path, file: img.file });
+      }
+    }
+  }
+
+  if (imageEntries.length === 0) {
+    addLog('אין תמונות פקודות לזיהוי.', 'info');
+    return;
+  }
+
+  // First, try to fetch existing metadata.json to merge with
+  let metadata = {};
+  try {
+    const metaResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/images/metadata.json?ref=${BRANCH}`, {
+      headers: { Authorization: `token ${token}` }
+    });
+    if (metaResp.ok) {
+      const metaData = await metaResp.json();
+      const decoded = atob(metaData.content.replace(/\n/g, ''));
+      metadata = JSON.parse(decoded);
+    }
+  } catch (e) {
+    // No existing metadata, start fresh
+  }
+
+  // Initialize Tesseract worker
+  let worker;
+  try {
+    worker = await Tesseract.createWorker('heb');
+  } catch (e) {
+    addLog('שגיאה באתחול מנוע OCR: ' + e.message, 'err');
+    return;
+  }
+
+  for (let idx = 0; idx < imageEntries.length; idx++) {
+    const entry = imageEntries[idx];
+    statusEl.textContent = `מזהה שמות... (${idx + 1}/${imageEntries.length})`;
+    try {
+      const result = await worker.recognize(entry.file);
+      const ocrText = result.data.text;
+      addLog(`OCR [${entry.path}]: ${ocrText.substring(0, 80).replace(/\n/g, ' ')}...`, 'info');
+      const names = findExaminersInText(ocrText);
+      metadata[entry.path] = names;
+      if (names.length > 0) {
+        addLog(`נמצאו ב-${entry.path}: ${names.join(', ')}`, 'ok');
+      } else {
+        addLog(`לא נמצאו שמות ב-${entry.path}`, 'info');
+      }
+    } catch (e) {
+      addLog(`שגיאת OCR ב-${entry.path}: ${e.message}`, 'err');
+      metadata[entry.path] = [];
+    }
+  }
+
+  await worker.terminate();
+
+  // Upload metadata.json to the repo
+  statusEl.textContent = 'שומר קובץ מטא-דאטה...';
+  try {
+    const metaContent = JSON.stringify(metadata, null, 2);
+    const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
+
+    // Check if metadata.json already exists (to get its sha)
+    let existingSha = null;
+    try {
+      const checkResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/images/metadata.json?ref=${BRANCH}`, {
+        headers: { Authorization: `token ${token}` }
+      });
+      if (checkResp.ok) {
+        const checkData = await checkResp.json();
+        existingSha = checkData.sha;
+      }
+    } catch (e) { /* file doesn't exist yet */ }
+
+    const body = {
+      message: 'Update metadata.json with OCR results',
+      content: metaBase64,
+      branch: BRANCH
+    };
+    if (existingSha) body.sha = existingSha;
+
+    const uploadResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/images/metadata.json`, {
+      method: 'PUT',
+      headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (uploadResp.ok) {
+      addLog('✅ metadata.json נשמר בהצלחה', 'ok');
+    } else {
+      const err = await uploadResp.json();
+      addLog('❌ שגיאה בשמירת metadata.json: ' + err.message, 'err');
+    }
+  } catch (e) {
+    addLog('❌ שגיאה בשמירת metadata.json: ' + e.message, 'err');
+  }
+
+  addLog('🎉 זיהוי שמות הושלם!', 'info');
 }
 </script>
 </body>

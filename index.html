@@ -210,12 +210,6 @@ header p {
   color: #e0e0e0;
 }
 
-.location-time {
-  font-size: 0.8rem;
-  color: #6b7b8d;
-  margin-top: 2px;
-}
-
 .nav-btn {
   padding: 8px 16px;
   background: #2d6a4f;
@@ -670,7 +664,6 @@ function renderLocations() {
     <div class="location-card">
       <div>
         <div class="location-name">${loc.name}</div>
-        <div class="location-time">זמן נסיעה ברכב: ${loc.driveTime} שעות</div>
       </div>
       <a href="https://waze.com/ul?q=${encodeURIComponent(loc.wazeQuery)}&navigate=yes"
          target="_blank" class="nav-btn">

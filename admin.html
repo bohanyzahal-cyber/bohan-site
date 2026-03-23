@@ -184,6 +184,21 @@ let token = localStorage.getItem('gh_token') || '';
 // Each image: { id, file, url, assignedDay: null|'weekly'|'day1'..'day5' }
 let images = [];
 
+// === EXAMINER NAMES ===
+const EXAMINER_NAMES = [
+  'אללוף יצחק',
+  'גיטלמן ויטלי',
+  'אלבלה אברהם',
+  'נגאוקר שמשון',
+  'מלל דרור',
+  'קורנבליט אלכס',
+  'שרון צרימי',
+  'יניר נאוגאוקר',
+  'פלס דוד',
+  'לוי בנימין',
+  'רון יהוד'
+];
+
 // === TOKEN ===
 const tokenInput = document.getElementById('token-input');
 tokenInput.value = token;
@@ -517,21 +532,6 @@ function addLog(msg, type) {
   log.appendChild(div);
   log.scrollTop = log.scrollHeight;
 }
-
-// === EXAMINER NAMES ===
-const EXAMINER_NAMES = [
-  'אללוף יצחק',
-  'גיטלמן ויטלי',
-  'אלבלה אברהם',
-  'נגאוקר שמשון',
-  'מלל דרור',
-  'קורנבליט אלכס',
-  'שרון צרימי',
-  'יניר נאוגאוקר',
-  'פלס דוד',
-  'לוי בנימין',
-  'רון יהוד'
-];
 
 async function saveExaminerMetadata(groups) {
   const statusEl = document.getElementById('upload-status');

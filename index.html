@@ -101,6 +101,52 @@ header p {
   border: 1px dashed #2a3a4a;
 }
 
+/* Examiner filter */
+.examiner-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #151f2b;
+  border-radius: 8px;
+  border: 1px solid #1e2d3d;
+}
+
+.examiner-filter label {
+  color: #8a9a8e;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.examiner-filter select {
+  flex: 1;
+  padding: 10px 12px;
+  background: #0f1923;
+  color: #e0e0e0;
+  border: 1px solid #2a3a4a;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.examiner-filter select:focus {
+  outline: none;
+  border-color: #4a7c59;
+}
+
+.no-match-msg {
+  text-align: center;
+  padding: 30px 20px;
+  color: #e0a030;
+  font-size: 1rem;
+  background: #1a2636;
+  border-radius: 8px;
+  border: 1px dashed #3a4a5a;
+}
+
 /* Day tabs for orders */
 .day-tabs {
   display: flex;
@@ -359,6 +405,23 @@ header p {
 <!-- Section 2: Daily Orders -->
 <div class="section" id="orders">
   <h2 class="section-title">פקודות עבודה יומיות</h2>
+  <div class="examiner-filter">
+    <label for="examiner-select">סינון לפי בוחן:</label>
+    <select id="examiner-select">
+      <option value="">כל הפקודות</option>
+      <option value="אללוף יצחק">אללוף יצחק</option>
+      <option value="גיטלמן ויטלי">גיטלמן ויטלי</option>
+      <option value="אלבלה אברהם">אלבלה אברהם</option>
+      <option value="נגאוקר שמשון">נגאוקר שמשון</option>
+      <option value="מלל דרור">מלל דרור</option>
+      <option value="קורנבליט אלכס">קורנבליט אלכס</option>
+      <option value="שרון צרימי">שרון צרימי</option>
+      <option value="יניר נאוגאוקר">יניר נאוגאוקר</option>
+      <option value="פלס דוד">פלס דוד</option>
+      <option value="לוי בנימין">לוי בנימין</option>
+      <option value="רון יהוד">רון יהוד</option>
+    </select>
+  </div>
   <div class="day-tabs">
     <button class="day-tab active" data-day="1">יום א'</button>
     <button class="day-tab" data-day="2">יום ב'</button>
@@ -604,8 +667,38 @@ function loadScheduleLocal() {
   }
 }
 
+// ===== EXAMINER METADATA =====
+let examinerMetadata = null;
+let currentDay = 1;
+
+// Load saved examiner selection
+const examinerSelect = document.getElementById('examiner-select');
+const savedExaminer = localStorage.getItem('selected_examiner') || '';
+examinerSelect.value = savedExaminer;
+
+examinerSelect.addEventListener('change', () => {
+  localStorage.setItem('selected_examiner', examinerSelect.value);
+  loadDayOrders(currentDay);
+});
+
+async function fetchMetadata() {
+  if (examinerMetadata !== null) return examinerMetadata;
+  try {
+    const resp = await fetch(ghRawUrl('images/metadata.json') + '?t=' + Date.now());
+    if (resp.ok) {
+      examinerMetadata = await resp.json();
+    } else {
+      examinerMetadata = {};
+    }
+  } catch (e) {
+    examinerMetadata = {};
+  }
+  return examinerMetadata;
+}
+
 // ===== LOAD DAY ORDERS (GitHub API) =====
 async function loadDayOrders(day) {
+  currentDay = day;
   const container = document.getElementById('orders-container');
   container.innerHTML = '<div class="no-content">טוען...</div>';
 
@@ -616,8 +709,36 @@ async function loadDayOrders(day) {
     return;
   }
 
+  const selectedExaminer = examinerSelect.value;
+
+  if (!selectedExaminer) {
+    // Show all images (default behavior)
+    container.innerHTML = '';
+    files.forEach(file => {
+      const img = document.createElement('img');
+      img.src = ghRawUrl(file.path);
+      img.className = 'order-img';
+      img.alt = file.name;
+      img.onclick = () => openLightbox(img.src);
+      container.appendChild(img);
+    });
+    return;
+  }
+
+  // Filter by examiner name using metadata
+  const metadata = await fetchMetadata();
+  const matchingFiles = files.filter(file => {
+    const names = metadata[file.path] || [];
+    return names.includes(selectedExaminer);
+  });
+
   container.innerHTML = '';
-  files.forEach(file => {
+  if (matchingFiles.length === 0) {
+    container.innerHTML = '<div class="no-match-msg">לא נמצאה פקודה עם השם שלך ליום זה</div>';
+    return;
+  }
+
+  matchingFiles.forEach(file => {
     const img = document.createElement('img');
     img.src = ghRawUrl(file.path);
     img.className = 'order-img';

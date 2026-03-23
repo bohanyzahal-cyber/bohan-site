@@ -473,30 +473,49 @@ const GITHUB_BRANCH = 'main';
 // Exam locations with Waze navigation
 const LOCATIONS = [
   { name: 'אופקים', driveTime: '1:15', wazeQuery: 'אופקים מגרש טסטים' },
-  { name: 'נתיבות', driveTime: '1:12', wazeQuery: 'נתיבות מגרש טסטים' },
-  { name: 'דימונה', driveTime: '1:24', wazeQuery: 'דימונה מגרש טסטים' },
+  { name: 'אשדוד', driveTime: '0:40', wazeQuery: 'אשדוד מגרש טסטים' },
+  { name: 'אשקלון', driveTime: '0:50', wazeQuery: 'אשקלון מגרש טסטים' },
+  { name: 'אילת', driveTime: '3:30', wazeQuery: 'אילת מגרש טסטים' },
   { name: 'באר שבע', driveTime: '1:12', wazeQuery: 'באר שבע מגרש טסטים' },
-  { name: 'נתניה', driveTime: '1:00', wazeQuery: 'נתניה מגרש טסטים' },
+  { name: 'באר שבע בית החייל', driveTime: '1:12', wazeQuery: 'בית החייל באר שבע' },
+  { name: 'באר שבע ל"ג', driveTime: '1:12', wazeQuery: 'באר שבע מגרש טסטים לייד גרין' },
+  { name: 'בח"א 6 חצרים', driveTime: '1:20', wazeQuery: 'בסיס חיל האוויר 6 חצרים' },
+  { name: 'בח"א 8 תל נוף', driveTime: '0:30', wazeQuery: 'בסיס חיל האוויר 8 תל נוף' },
+  { name: 'פלמחים', driveTime: '0:30', wazeQuery: 'בסיס פלמחים' },
+  { name: 'ביס"ט 21 טכני', driveTime: '1:12', wazeQuery: 'ביסט 21 טכני באר שבע' },
+  { name: 'בית נבאללה', driveTime: '0:20', wazeQuery: 'בית נבאללה' },
+  { name: 'בית שמש', driveTime: '0:40', wazeQuery: 'בית שמש מגרש טסטים' },
+  { name: 'בהל"צ', driveTime: '1:30', wazeQuery: 'בהלצ עיר הבהדים' },
+  { name: 'דימונה', driveTime: '1:24', wazeQuery: 'דימונה מגרש טסטים' },
+  { name: 'הדר יוסף', driveTime: '0:15', wazeQuery: 'הדר יוסף מגרש טסטים' },
   { name: 'חדרה', driveTime: '0:45', wazeQuery: 'חדרה מגרש טסטים' },
   { name: 'חיפה', driveTime: '1:00', wazeQuery: 'חיפה מגרש טסטים' },
-  { name: 'עפולה', driveTime: '1:00', wazeQuery: 'עפולה מגרש טסטים' },
+  { name: 'חיפה ל"ג', driveTime: '1:00', wazeQuery: 'חיפה מגרש טסטים לייד גרין' },
   { name: 'טבריה', driveTime: '1:30', wazeQuery: 'טבריה מגרש טסטים' },
+  { name: 'טבריה ל"ג', driveTime: '1:30', wazeQuery: 'טבריה מגרש טסטים לייד גרין' },
+  { name: 'יפו', driveTime: '0:10', wazeQuery: 'יפו מגרש טסטים' },
+  { name: 'ירושלים', driveTime: '0:50', wazeQuery: 'ירושלים מגרש טסטים' },
+  { name: 'ירושלים ל"ג', driveTime: '0:50', wazeQuery: 'ירושלים מגרש טסטים לייד גרין' },
+  { name: 'כנף 1 רמת דוד', driveTime: '1:15', wazeQuery: 'כנף 1 רמת דוד' },
+  { name: 'כנף 25 רמון', driveTime: '2:00', wazeQuery: 'כנף 25 רמון' },
+  { name: 'כנף 28 נבטים', driveTime: '1:30', wazeQuery: 'כנף 28 נבטים' },
+  { name: 'כפר סבא', driveTime: '0:30', wazeQuery: 'כפר סבא מגרש טסטים' },
+  { name: 'לוד', driveTime: '0:15', wazeQuery: 'לוד מגרש טסטים' },
+  { name: 'מחנה עמוס', driveTime: '1:00', wazeQuery: 'מחנה עמוס' },
+  { name: 'משמר הנגב', driveTime: '1:15', wazeQuery: 'משמר הנגב' },
+  { name: 'נתיבות', driveTime: '1:12', wazeQuery: 'נתיבות מגרש טסטים' },
+  { name: 'נתניה', driveTime: '1:00', wazeQuery: 'נתניה מגרש טסטים' },
+  { name: 'עיר הבהדים', driveTime: '1:30', wazeQuery: 'עיר הבהדים' },
   { name: 'עכו', driveTime: '1:15', wazeQuery: 'עכו מגרש טסטים' },
-  { name: 'מפרץ (חיפה)', driveTime: '1:15', wazeQuery: 'מפרץ חיפה מגרש טסטים' },
+  { name: 'עפולה', driveTime: '1:00', wazeQuery: 'עפולה מגרש טסטים' },
+  { name: 'עפולה משא כבד', driveTime: '1:00', wazeQuery: 'עפולה מגרש טסטים משא כבד' },
+  { name: 'פתח תקווה', driveTime: '0:20', wazeQuery: 'פתח תקווה מגרש טסטים' },
+  { name: 'קרית גת', driveTime: '0:45', wazeQuery: 'קרית גת מגרש טסטים' },
+  { name: 'קרית חיים', driveTime: '1:05', wazeQuery: 'קרית חיים מגרש טסטים' },
   { name: 'קרית שמונה', driveTime: '2:00', wazeQuery: 'קרית שמונה מגרש טסטים' },
   { name: 'ראשון לציון', driveTime: '0:20', wazeQuery: 'ראשון לציון מגרש טסטים' },
   { name: 'רחובות', driveTime: '0:30', wazeQuery: 'רחובות מגרש טסטים' },
-  { name: 'ירושלים', driveTime: '0:50', wazeQuery: 'ירושלים מגרש טסטים' },
-  { name: 'אשדוד', driveTime: '0:40', wazeQuery: 'אשדוד מגרש טסטים' },
-  { name: 'אשקלון', driveTime: '0:50', wazeQuery: 'אשקלון מגרש טסטים' },
-  { name: 'לוד', driveTime: '0:15', wazeQuery: 'לוד מגרש טסטים' },
-  { name: 'פתח תקווה', driveTime: '0:20', wazeQuery: 'פתח תקווה מגרש טסטים' },
-  { name: 'עפולה צבאי', driveTime: '1:00', wazeQuery: 'מחנה צבאי עפולה' },
-  { name: 'יפו', driveTime: '0:10', wazeQuery: 'יפו מגרש טסטים' },
-  { name: 'בית נבאללה', driveTime: '0:20', wazeQuery: 'בית נבאללה' },
-  { name: 'אילת', driveTime: '3:30', wazeQuery: 'אילת מגרש טסטים' },
-  { name: 'משמר הנגב', driveTime: '1:15', wazeQuery: 'משמר הנגב' },
-  { name: 'קרית גת', driveTime: '0:45', wazeQuery: 'קרית גת מגרש טסטים' },
+  { name: 'תה"ש ל"ג', driveTime: '0:20', wazeQuery: 'תחנת השירות לייד גרין' },
 ];
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
@@ -647,13 +666,7 @@ function loadDayOrdersLocal(day) {
 // ===== LOCATIONS =====
 function renderLocations() {
   const list = document.getElementById('locations-list');
-  const seen = new Set();
-  const unique = LOCATIONS.filter(loc => {
-    if (seen.has(loc.name)) return false;
-    seen.add(loc.name);
-    return true;
-  });
-  list.innerHTML = unique.map(loc => `
+  list.innerHTML = LOCATIONS.map(loc => `
     <div class="location-card">
       <div>
         <div class="location-name">${loc.name}</div>

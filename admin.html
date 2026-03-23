@@ -446,8 +446,7 @@ async function uploadAll() {
                 await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/${archivePath}`, {
                   method: 'PUT',
                   headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ message: `Archive ${file.name}`, content: fileData.content.replace(/
-/g, ''), branch: BRANCH })
+                  body: JSON.stringify({ message: `Archive ${file.name}`, content: fileData.content.replace(/\n/g, ''), branch: BRANCH })
                 });
                 addLog('Archived: ' + file.name, 'info');
               } catch (ae) {

@@ -729,7 +729,15 @@ async function loadDayOrders(day) {
   const metadata = await fetchMetadata();
   const matchingFiles = files.filter(file => {
     const names = metadata[file.path] || [];
-    return names.includes(selectedExaminer);
+    // Match both name orders: "גיטלמן ויטלי" matches "ויטלי גיטלמן"
+    const parts = selectedExaminer.trim().split(/\s+/);
+    const reversed = parts.length >= 2 ? parts.reverse().join(' ') : '';
+    return names.some(function(n) {
+      var nn = n.trim();
+      return nn === selectedExaminer || nn === reversed ||
+             nn.includes(selectedExaminer) || nn.includes(reversed) ||
+             selectedExaminer.includes(nn) || (reversed && reversed.includes(nn));
+    });
   });
 
   container.innerHTML = '';

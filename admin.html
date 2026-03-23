@@ -52,6 +52,15 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 .card-remove { margin-right: auto; padding: 6px 10px; background: #3a1515; color: #e74c3c; border: 1px solid #5a2020; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
 .card-remove:hover { background: #5a2020; }
 
+.card-examiners { display: none; padding: 8px 10px; background: #0f1923; border-top: 1px solid #1e2d3d; }
+.card-examiners.visible { display: block; }
+.card-examiners-title { color: #8a9a8e; font-size: 0.75rem; margin-bottom: 6px; }
+.examiner-checks { display: flex; flex-wrap: wrap; gap: 4px; }
+.examiner-check { display: flex; align-items: center; gap: 4px; padding: 4px 8px; background: #151f2b; border: 1px solid #2a3a4a; border-radius: 6px; cursor: pointer; font-size: 0.78rem; color: #8a9a9e; transition: all 0.2s; }
+.examiner-check:hover { border-color: #3a4a5a; color: #b0c0c4; }
+.examiner-check.checked { background: #1a3a2a; color: #7bc67e; border-color: #4a7c59; }
+.examiner-check input { display: none; }
+
 /* Summary section */
 .summary { background: #151f2b; border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid #1e2d3d; }
 .summary h3 { color: #7bc67e; margin-bottom: 10px; }
@@ -166,7 +175,6 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
 
 <a href="index.html" class="back-link">← חזרה לאתר הבוחנים</a>
 
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script>
 const OWNER = 'bohanyzahal-cyber';
 const REPO = 'bohan-site';
@@ -209,7 +217,7 @@ function addFiles(fileList) {
     if (!file.type.startsWith('image/')) continue;
     const id = 'img_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
     const url = URL.createObjectURL(file);
-    images.push({ id, file, url, assignedDay: null });
+    images.push({ id, file, url, assignedDay: null, examiners: [] });
   }
   renderCards();
 }
@@ -265,7 +273,8 @@ function renderCards() {
       btn.textContent = day.text;
       btn.onclick = () => {
         if (img.assignedDay === day.key) {
-          img.assignedDay = null; // toggle off
+          img.assignedDay = null;
+          img.examiners = [];
         } else {
           img.assignedDay = day.key;
         }
@@ -283,8 +292,35 @@ function renderCards() {
     };
     bar.appendChild(removeBtn);
 
+    // Examiner checkboxes (shown when day is assigned)
+    const exDiv = document.createElement('div');
+    exDiv.className = 'card-examiners' + (img.assignedDay && img.assignedDay !== 'weekly' ? ' visible' : '');
+    exDiv.innerHTML = '<div class="card-examiners-title">בוחנים בתמונה:</div>';
+    const checksDiv = document.createElement('div');
+    checksDiv.className = 'examiner-checks';
+    EXAMINER_NAMES.forEach(name => {
+      const label = document.createElement('label');
+      label.className = 'examiner-check' + (img.examiners.includes(name) ? ' checked' : '');
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = img.examiners.includes(name);
+      cb.onchange = () => {
+        if (cb.checked) {
+          if (!img.examiners.includes(name)) img.examiners.push(name);
+        } else {
+          img.examiners = img.examiners.filter(n => n !== name);
+        }
+        label.classList.toggle('checked', cb.checked);
+      };
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(name.split(' ').reverse().join(' ')));
+      checksDiv.appendChild(label);
+    });
+    exDiv.appendChild(checksDiv);
+
     card.appendChild(imgEl);
     card.appendChild(bar);
+    card.appendChild(exDiv);
     container.appendChild(card);
   });
 
@@ -454,10 +490,10 @@ async function uploadAll() {
     }
   }
 
-  addLog(`🎉 ${done} תמונות הועלו בהצלחה. מתחיל זיהוי שמות...`, 'info');
+  addLog(`🎉 ${done} תמונות הועלו בהצלחה`, 'info');
 
-  // === OCR STEP: Identify examiner names in uploaded images ===
-  await runOcrOnUploadedImages(groups);
+  // === Save examiner metadata ===
+  await saveExaminerMetadata(groups);
 
   btn.textContent = '💾 שמור באתר';
   btn.disabled = false;
@@ -482,7 +518,7 @@ function addLog(msg, type) {
   log.scrollTop = log.scrollHeight;
 }
 
-// === EXAMINER NAMES FOR OCR ===
+// === EXAMINER NAMES ===
 const EXAMINER_NAMES = [
   'אללוף יצחק',
   'גיטלמן ויטלי',
@@ -497,106 +533,29 @@ const EXAMINER_NAMES = [
   'רון יהוד'
 ];
 
-// Build last-name lookup for fuzzy matching
-const EXAMINER_LAST_NAMES = EXAMINER_NAMES.map(name => {
-  const parts = name.split(' ');
-  return { fullName: name, lastName: parts[0], firstName: parts.length > 1 ? parts[1] : '' };
-});
-
-function findExaminersInText(ocrText) {
-  const found = [];
-  const text = ocrText.replace(/\n/g, ' ');
-  for (const ex of EXAMINER_LAST_NAMES) {
-    // Try full name first, then last name only
-    if (text.includes(ex.fullName) || text.includes(ex.lastName)) {
-      found.push(ex.fullName);
-    }
-  }
-  return found;
-}
-
-async function runOcrOnUploadedImages(groups) {
+async function saveExaminerMetadata(groups) {
   const statusEl = document.getElementById('upload-status');
-  statusEl.textContent = 'מזהה שמות בוחנים...';
-  addLog('מתחיל זיהוי שמות בוחנים בתמונות...', 'info');
+  statusEl.textContent = 'שומר נתוני בוחנים...';
 
-  // Collect all uploaded image paths and their File objects
-  const imageEntries = []; // { path, file }
+  // Build metadata from checkbox selections
+  const metadata = {};
+  const assigned = images.filter(i => i.assignedDay && i.assignedDay !== 'weekly');
+
   for (const [lane, imgs] of Object.entries(groups)) {
+    if (lane === 'weekly') continue;
     for (let i = 0; i < imgs.length; i++) {
       const img = imgs[i];
       const ext = img.file.name.split('.').pop().toLowerCase();
-      let path;
-      if (lane === 'weekly') {
-        path = imgs.length === 1 ? `images/weekly/schedule.${ext}` : `images/weekly/${i + 1}.${ext}`;
-      } else {
-        path = `images/orders/${lane}/${i + 1}.${ext}`;
-      }
-      // Only process order images (not weekly schedule)
-      if (lane !== 'weekly') {
-        imageEntries.push({ path, file: img.file });
-      }
+      const path = `images/orders/${lane}/${i + 1}.${ext}`;
+      metadata[path] = img.examiners || [];
     }
   }
 
-  if (imageEntries.length === 0) {
-    addLog('אין תמונות פקודות לזיהוי.', 'info');
-    return;
-  }
-
-  // First, try to fetch existing metadata.json to merge with
-  let metadata = {};
-  try {
-    const metaResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/images/metadata.json?ref=${BRANCH}`, {
-      headers: { Authorization: `token ${token}` }
-    });
-    if (metaResp.ok) {
-      const metaData = await metaResp.json();
-      const decoded = atob(metaData.content.replace(/\n/g, ''));
-      metadata = JSON.parse(decoded);
-    }
-  } catch (e) {
-    // No existing metadata, start fresh
-  }
-
-  // Initialize Tesseract worker
-  let worker;
-  try {
-    worker = await Tesseract.createWorker('heb');
-  } catch (e) {
-    addLog('שגיאה באתחול מנוע OCR: ' + e.message, 'err');
-    return;
-  }
-
-  for (let idx = 0; idx < imageEntries.length; idx++) {
-    const entry = imageEntries[idx];
-    statusEl.textContent = `מזהה שמות... (${idx + 1}/${imageEntries.length})`;
-    try {
-      const result = await worker.recognize(entry.file);
-      const ocrText = result.data.text;
-      addLog(`OCR [${entry.path}]: ${ocrText.substring(0, 80).replace(/\n/g, ' ')}...`, 'info');
-      const names = findExaminersInText(ocrText);
-      metadata[entry.path] = names;
-      if (names.length > 0) {
-        addLog(`נמצאו ב-${entry.path}: ${names.join(', ')}`, 'ok');
-      } else {
-        addLog(`לא נמצאו שמות ב-${entry.path}`, 'info');
-      }
-    } catch (e) {
-      addLog(`שגיאת OCR ב-${entry.path}: ${e.message}`, 'err');
-      metadata[entry.path] = [];
-    }
-  }
-
-  await worker.terminate();
-
-  // Upload metadata.json to the repo
-  statusEl.textContent = 'שומר קובץ מטא-דאטה...';
+  // Upload metadata.json
   try {
     const metaContent = JSON.stringify(metadata, null, 2);
     const metaBase64 = btoa(unescape(encodeURIComponent(metaContent)));
 
-    // Check if metadata.json already exists (to get its sha)
     let existingSha = null;
     try {
       const checkResp = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}/contents/images/metadata.json?ref=${BRANCH}`, {
@@ -606,10 +565,10 @@ async function runOcrOnUploadedImages(groups) {
         const checkData = await checkResp.json();
         existingSha = checkData.sha;
       }
-    } catch (e) { /* file doesn't exist yet */ }
+    } catch (e) {}
 
     const body = {
-      message: 'Update metadata.json with OCR results',
+      message: 'Update metadata.json',
       content: metaBase64,
       branch: BRANCH
     };
@@ -625,14 +584,13 @@ async function runOcrOnUploadedImages(groups) {
       addLog('✅ metadata.json נשמר בהצלחה', 'ok');
     } else {
       const err = await uploadResp.json();
-      addLog('❌ שגיאה בשמירת metadata.json: ' + err.message, 'err');
+      addLog('❌ שגיאה: ' + err.message, 'err');
     }
   } catch (e) {
-    addLog('❌ שגיאה בשמירת metadata.json: ' + e.message, 'err');
+    addLog('❌ שגיאה: ' + e.message, 'err');
   }
-
-  addLog('🎉 זיהוי שמות הושלם!', 'info');
 }
+
 </script>
 </body>
 </html>

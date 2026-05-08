@@ -382,6 +382,84 @@ header p {
 </style>
 </head>
 <body>
+<style id="password-gate-style">
+#password-gate {
+  position: fixed; top:0; left:0; right:0; bottom:0; background: #0f1923;
+  z-index: 99999; display: flex; align-items: center; justify-content: center;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+#password-gate.hidden { display: none; }
+#password-gate-box {
+  background: #151f2b; padding: 32px; border-radius: 12px;
+  border: 1px solid #1e2d3d; max-width: 400px; width: 90%;
+  text-align: center;
+}
+#password-gate-box h2 { color: #7bc67e; margin-bottom: 16px; font-size: 1.3rem; }
+#password-gate-box p { color: #8a9a8e; font-size: 0.9rem; margin-bottom: 20px; }
+#password-gate-box input {
+  width: 100%; padding: 12px; background: #0f1923; border: 1px solid #2a3a4a;
+  border-radius: 8px; color: #e0e0e0; font-size: 1rem; margin-bottom: 12px;
+  text-align: center;
+}
+#password-gate-box button {
+  width: 100%; padding: 12px; background: #2d6a4f; color: white;
+  border: none; border-radius: 8px; font-size: 1rem; font-weight: 600;
+  cursor: pointer;
+}
+#password-gate-box button:hover { background: #3a8963; }
+#password-gate-error { color: #e74c3c; font-size: 0.85rem; margin-top: 8px; min-height: 18px; }
+</style>
+<div id="password-gate">
+  <div id="password-gate-box">
+    <h2>🔒 גישה מוגבלת</h2>
+    <p>אתר זה מיועד לבוחני רישוי בלבד</p>
+    <input type="password" id="password-input" placeholder="הכנס סיסמה" autofocus />
+    <button onclick="checkPassword()">היכנס</button>
+    <div id="password-gate-error"></div>
+  </div>
+</div>
+<script id="password-gate-script">
+const PWD_HASH = "069acff748c6dbdae2d381647be6b3712f64ec880fadb68f55af5e48b832e215";
+const AUTH_KEY = 'site_auth_v1';
+const AUTH_DAYS = 30;
+
+async function sha256(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function isAuthed() {
+  try {
+    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
+    if (!a) return false;
+    return Date.now() < a.exp;
+  } catch { return false; }
+}
+
+async function checkPassword() {
+  const input = document.getElementById('password-input').value;
+  const err = document.getElementById('password-gate-error');
+  err.textContent = '';
+  const h = await sha256(input);
+  if (h === PWD_HASH) {
+    localStorage.setItem(AUTH_KEY, JSON.stringify({ exp: Date.now() + AUTH_DAYS*24*60*60*1000 }));
+    document.getElementById('password-gate').classList.add('hidden');
+  } else {
+    err.textContent = 'סיסמה שגויה';
+    document.getElementById('password-input').value = '';
+  }
+}
+
+document.getElementById('password-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') checkPassword();
+});
+
+if (isAuthed()) {
+  document.getElementById('password-gate').classList.add('hidden');
+}
+</script>
+
 
 <header>
   <h1>בוחני רישוי צה"ל</h1>

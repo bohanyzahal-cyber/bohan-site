@@ -497,7 +497,9 @@ function applySiteData(data) {
 async function checkPassword() {
   var input = document.getElementById('password-input').value;
   var err = document.getElementById('password-gate-error');
-  err.textContent = 'מאמת...';
+  var btn = document.querySelector('#password-gate-box button');
+  err.textContent = '';
+  if (btn) { btn.disabled = true; btn.textContent = 'מאמת...'; }
   try {
     var resp = await authWithServer({ password: input });
     if (resp && resp.status === 'ok' && resp.token && resp.data) {
@@ -512,6 +514,8 @@ async function checkPassword() {
     }
   } catch (e) {
     err.textContent = 'שגיאת תקשורת — נסה שוב';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'היכנס'; }
   }
 }
 

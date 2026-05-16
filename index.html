@@ -419,45 +419,126 @@ header p {
   </div>
 </div>
 <script id="password-gate-script">
-const PWD_HASH = "069acff748c6dbdae2d381647be6b3712f64ec880fadb68f55af5e48b832e215";
-const AUTH_KEY = 'site_auth_v1';
-const AUTH_DAYS = 30;
+// Server-side authentication. The password lives in Apps Script
+// ScriptProperties; the HTML only sends what the user typed and gets
+// back a short-lived signed token (24h) along with the site data.
+// Old client-side SHA-256 hash is gone — bypassing JS no longer helps.
+const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbzOI0zrDEngP-GvlRblhOk8tQsYBvWZ2gGliIQHTpS67WrDZl4la8NPpwtJr_Vjsh3Gzg/exec';
+const AUTH_KEY = 'site_auth_v2'; // bump key so old client-side auth doesn't carry over
+const AUTH_ORIGIN = 'bohanyzahal-site';
 
-async function sha256(str) {
-  const buf = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
+// Server-supplied data shared with the rest of the page after auth.
+window.BOHAN_SITE_DATA = null;
 
-function isAuthed() {
+function getStoredToken() {
   try {
-    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
-    if (!a) return false;
-    return Date.now() < a.exp;
-  } catch { return false; }
+    var raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || !obj.token || !obj.exp) return null;
+    if (Date.now() > obj.exp) return null;
+    return obj.token;
+  } catch { return null; }
 }
 
-async function checkPassword() {
-  const input = document.getElementById('password-input').value;
-  const err = document.getElementById('password-gate-error');
-  err.textContent = '';
-  const h = await sha256(input);
-  if (h === PWD_HASH) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify({ exp: Date.now() + AUTH_DAYS*24*60*60*1000 }));
-    document.getElementById('password-gate').classList.add('hidden');
-  } else {
-    err.textContent = 'סיסמה שגויה';
-    document.getElementById('password-input').value = '';
+function storeToken(token) {
+  // Match server's 24-hour expiry (set in handleBohanSiteAuth)
+  localStorage.setItem(AUTH_KEY, JSON.stringify({
+    token: token,
+    exp: Date.now() + 24 * 60 * 60 * 1000
+  }));
+}
+
+function clearToken() {
+  try { localStorage.removeItem(AUTH_KEY); } catch {}
+}
+
+async function authWithServer(params) {
+  var qs = Object.keys(params)
+    .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
+    .join('&');
+  qs += '&origin=' + encodeURIComponent(AUTH_ORIGIN) + '&_t=' + Date.now();
+  var resp = await fetch(AUTH_API_URL + '?action=bohanSiteAuth&' + qs, { cache: 'no-store' });
+  return resp.json();
+}
+
+function applySiteData(data) {
+  if (!data) return;
+  window.BOHAN_SITE_DATA = data;
+  if (Array.isArray(data.locations)) window.LOCATIONS = data.locations;
+  if (Array.isArray(data.examiners)) window.EXAMINERS = data.examiners;
+
+  // Populate examiner dropdown
+  var sel = document.getElementById('examiner-select');
+  if (sel && Array.isArray(data.examiners)) {
+    // Keep the "all" option (first), add the rest
+    while (sel.options.length > 1) sel.remove(1);
+    data.examiners.forEach(function(name) {
+      var opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
+  }
+
+  // Set external links
+  var sheetsLink = document.getElementById('link-sheets');
+  if (sheetsLink && data.sheetsUrl) {
+    sheetsLink.href = data.sheetsUrl;
+    sheetsLink.style.display = '';
+  }
+  var sitesLink = document.getElementById('link-sites');
+  if (sitesLink && data.sitesUrl) {
+    sitesLink.href = data.sitesUrl;
+    sitesLink.style.display = '';
   }
 }
 
-document.getElementById('password-input').addEventListener('keydown', e => {
+async function checkPassword() {
+  var input = document.getElementById('password-input').value;
+  var err = document.getElementById('password-gate-error');
+  err.textContent = 'מאמת...';
+  try {
+    var resp = await authWithServer({ password: input });
+    if (resp && resp.status === 'ok' && resp.token && resp.data) {
+      storeToken(resp.token);
+      applySiteData(resp.data);
+      err.textContent = '';
+      document.getElementById('password-gate').classList.add('hidden');
+      if (typeof onAuthSuccess === 'function') try { onAuthSuccess(); } catch {}
+    } else {
+      err.textContent = (resp && resp.message) ? resp.message : 'סיסמה שגויה';
+      document.getElementById('password-input').value = '';
+    }
+  } catch (e) {
+    err.textContent = 'שגיאת תקשורת — נסה שוב';
+  }
+}
+
+async function tryTokenLogin() {
+  var token = getStoredToken();
+  if (!token) return false;
+  try {
+    var resp = await authWithServer({ token: token });
+    if (resp && resp.status === 'ok' && resp.data) {
+      applySiteData(resp.data);
+      document.getElementById('password-gate').classList.add('hidden');
+      if (typeof onAuthSuccess === 'function') try { onAuthSuccess(); } catch {}
+      return true;
+    }
+    clearToken();
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+document.getElementById('password-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') checkPassword();
 });
 
-if (isAuthed()) {
-  document.getElementById('password-gate').classList.add('hidden');
-}
+// On load: try silent token re-auth; if that fails the password gate stays up.
+tryTokenLogin();
 </script>
 
 
@@ -487,17 +568,8 @@ if (isAuthed()) {
     <label for="examiner-select">סינון לפי בוחן:</label>
     <select id="examiner-select">
       <option value="">כל הפקודות</option>
-      <option value="אללוף יצחק">אללוף יצחק</option>
-      <option value="גיטלמן ויטלי">גיטלמן ויטלי</option>
-      <option value="אלבלה אברהם">אלבלה אברהם</option>
-      <option value="נגאוקר שמשון">נגאוקר שמשון</option>
-      <option value="מלל דרור">מלל דרור</option>
-      <option value="קורנבליט אלכס">קורנבליט אלכס</option>
-      <option value="שרון צרימי">שרון צרימי</option>
-      <option value="יניר נאוגאוקר">יניר נאוגאוקר</option>
-      <option value="פלס דוד">פלס דוד</option>
-      <option value="לוי בנימין">לוי בנימין</option>
-      <option value="רון יהוד">רון יהוד</option>
+      <!-- examiner options populated by JS after server-side login -->
+
     </select>
   </div>
   <div class="day-tabs">
@@ -533,7 +605,7 @@ if (isAuthed()) {
 <div class="section" id="links">
   <h2 class="section-title">קישורים</h2>
   <div class="links-grid">
-    <a href="https://docs.google.com/spreadsheets/d/1KAX96KcGNQU7aOS7lf6oMZY-FiDuJ_j5npcDSVfiW5E/edit?usp=sharing" target="_blank" class="link-card">
+    <a href="#" id="link-sheets" target="_blank" class="link-card" style="display:none;">
       <div class="link-icon">📊</div>
       <div class="link-text">
         <h3>גיליון סידור שבועי</h3>
@@ -570,7 +642,7 @@ if (isAuthed()) {
         <p>טופס מבחן נהיגה</p>
       </div>
     </a>
-    <a href="https://sites.google.com/view/bohanyzahal/%D7%91%D7%99%D7%AA" target="_blank" class="link-card">
+    <a href="#" id="link-sites" target="_blank" class="link-card" style="display:none;">
       <div class="link-icon">🏠</div>
       <div class="link-text">
         <h3>האתר הקיים</h3>
@@ -605,53 +677,11 @@ const GITHUB_OWNER = 'bohanyzahal-cyber';
 const GITHUB_REPO = 'bohan-site';
 const GITHUB_BRANCH = 'main';
 
-// Exam locations with Waze navigation
-const LOCATIONS = [
-  { name: 'אופקים', wazeUrl: 'https://ul.waze.com/ul?ll=31.32266385%2C34.62266207&navigate=yes&zoom=17&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'אשדוד', wazeUrl: 'https://waze.com/ul/hsv8sudz4t' },
-  { name: 'אשקלון', wazeUrl: 'https://ul.waze.com/ul?ll=31.66465059%2C34.55991983&navigate=yes&zoom=17&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'אילת', wazeUrl: 'https://waze.com/ul/hsv2b5mzn7' },
-  { name: 'באר שבע', wazeUrl: 'https://ul.waze.com/ul?ll=31.24712197%2C34.76847768&navigate=yes&zoom=17&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'באר שבע בית החייל', wazeUrl: 'https://www.ufis.org.il/?categoryId=123860' },
-  { name: 'באר שבע ל"ג', wazeUrl: 'https://waze.com/ul/hsv89zc1eu' },
-  { name: 'בח"א 6 חצרים', wazeUrl: 'https://ul.waze.com/ul?ll=31.24938755%2C34.66291666&navigate=yes&zoom=17&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'בח"א 8 תל נוף', wazeUrl: 'https://ul.waze.com/ul?ll=31.83986809%2C34.81412888&navigate=yes&zoom=14&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'פלמחים', wazeUrl: 'https://ul.waze.com/ul?ll=31.92554940%2C34.71307397&navigate=yes&zoom=17&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'ביס"ט 21 טכני', wazeUrl: 'https://ul.waze.com/ul?ll=32.86343939%2C35.04089355&navigate=yes&zoom=9&utm_campaign=default&utm_source=waze_website&utm_medium=lm_share_location' },
-  { name: 'בית נבאללה', wazeUrl: 'https://waze.com/ul/hsv8vgj8r9' },
-  { name: 'בית שמש', wazeUrl: 'https://waze.com/ul/hsv8us7hey' },
-  { name: 'בהל"צ', wazeUrl: 'https://waze.com/ul/hsv2fff46z' },
-  { name: 'דימונה', wazeUrl: 'https://waze.com/ul/hsv8btpv88' },
-  { name: 'הדר יוסף', wazeUrl: 'https://waze.com/ul/hsv8y8hwnu' },
-  { name: 'חדרה', wazeUrl: 'https://waze.com/ul/hsvbb6zm8x' },
-  { name: 'חיפה', wazeUrl: 'https://waze.com/ul/hsvbfe9sg0' },
-  { name: 'חיפה ל"ג', wazeUrl: 'https://waze.com/ul/hsvbft3gwz' },
-  { name: 'טבריה', wazeUrl: 'https://ul.waze.com/ul?ll=32.78839400%2C35.53756700&navigate=yes&utm_campaign=share_drive&utm_source=waze_app&utm_medium=lm_share_location' },
-  { name: 'טבריה ל"ג', wazeUrl: 'https://waze.com/ul/hsvc62ppwf' },
-  { name: 'יפו', wazeUrl: 'https://waze.com/ul/hsv8wr1gvv' },
-  { name: 'ירושלים', wazeUrl: 'https://waze.com/ul/hsv9h8u42r' },
-  { name: 'ירושלים ל"ג', wazeUrl: 'https://waze.com/ul/hsv9h9ryht' },
-  { name: 'כנף 1 רמת דוד', wazeUrl: 'https://waze.com/ul/hsvc1b53fy' },
-  { name: 'כנף 25 רמון', wazeUrl: 'https://waze.com/ul/hsv2xhgew9' },
-  { name: 'כנף 28 נבטים', wazeUrl: 'https://waze.com/ul/hsv8ct9tb0' },
-  { name: 'כפר סבא', wazeUrl: 'https://waze.com/ul/hsv8yfxfp0' },
-  { name: 'לוד', wazeUrl: 'https://waze.com/ul/hsv8v9vemx' },
-  { name: 'מחנה עמוס', wazeUrl: 'https://waze.com/ul/hsvc16rd7e' },
-  { name: 'משמר הנגב', wazeUrl: 'https://waze.com/ul/hsv8djxbxr' },
-  { name: 'נתיבות', wazeUrl: 'https://waze.com/ul/hsv8ddwrsd' },
-  { name: 'נתניה', wazeUrl: 'https://waze.com/ul/hsv8zcd4ss' },
-  { name: 'עיר הבהדים', wazeUrl: 'https://waze.com/ul/hsv8b8y09k' },
-  { name: 'עכו', wazeUrl: 'https://waze.com/ul/hsvbgq3ccg' },
-  { name: 'עפולה', wazeUrl: 'https://waze.com/ul/hsvc17pke7' },
-  { name: 'עפולה משא כבד', wazeUrl: 'https://waze.com/ul/hsvc1ed03e' },
-  { name: 'פתח תקווה', wazeUrl: 'https://waze.com/ul/hsv8y9kdg1' },
-  { name: 'קרית גת', wazeUrl: 'https://waze.com/ul/hsv8ez31n2' },
-  { name: 'קרית חיים', wazeUrl: 'https://waze.com/ul/hsvbftyx0z' },
-  { name: 'קרית שמונה', wazeUrl: 'https://waze.com/ul/hsvckc7vk8' },
-  { name: 'ראשון לציון', wazeUrl: 'https://waze.com/ul/hsv8tzcr54' },
-  { name: 'רחובות', wazeUrl: 'https://waze.com/ul/hsv8trzeke' },
-  { name: 'תה"ש ל"ג', wazeUrl: 'https://waze.com/ul/hsv8wrkzz3' },
-];
+// Locations + examiner names are NOT shipped in the HTML anymore — they
+// come from Apps Script (handleBohanSiteAuth) after the user enters the
+// shared password. See the auth flow at the bottom of this script.
+var LOCATIONS = [];
+var EXAMINERS = [];
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
 
@@ -807,7 +837,7 @@ async function loadDayOrders(day) {
   const metadata = await fetchMetadata();
   const matchingFiles = files.filter(file => {
     const names = metadata[file.path] || [];
-    // Match both name orders: "גיטלמן ויטלי" matches "ויטלי גיטלמן"
+    // Match both first-last and last-first name orders
     const parts = selectedExaminer.trim().split(/\s+/);
     const reversed = parts.length >= 2 ? parts.reverse().join(' ') : '';
     return names.some(function(n) {
@@ -1109,10 +1139,18 @@ async function loadArchiveDay(day) {
 }
 
 // ===== INIT =====
+// Non-auth-gated UI (just loads images from public GitHub paths).
+// Locations/examiners are deferred — they need server-side auth first.
 loadSchedule();
 loadDayOrders(1);
 loadArchiveWeeks();
-renderLocations();
+
+// Called from the password-gate script after a successful login OR
+// after a stored token re-validates. Populates everything that depends
+// on server-supplied data.
+window.onAuthSuccess = function() {
+  try { renderLocations(); } catch (e) {}
+};
 document.getElementById('last-update').textContent = new Date().toLocaleDateString('he-IL');
 </script>
 </body>

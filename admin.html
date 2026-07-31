@@ -142,45 +142,108 @@ body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #0f1923; 
   </div>
 </div>
 <script id="password-gate-script">
-const PWD_HASH = "069acff748c6dbdae2d381647be6b3712f64ec880fadb68f55af5e48b832e215";
-const AUTH_KEY = 'site_auth_v1';
-const AUTH_DAYS = 30;
+// Server-side authentication — same flow, token key (site_auth_v2), and
+// shared password as index.html. A valid token stored by index.html is
+// reused here, so a manager who already opened the main site that day
+// enters with no prompt. The examiner list for tagging comes from the
+// server response — names are no longer hardcoded in this public file.
+const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbzOI0zrDEngP-GvlRblhOk8tQsYBvWZ2gGliIQHTpS67WrDZl4la8NPpwtJr_Vjsh3Gzg/exec';
+const AUTH_KEY = 'site_auth_v2';
+const AUTH_ORIGIN = 'bohanyzahal-site';
 
-async function sha256(str) {
-  const buf = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+function getStoredToken() {
+  try {
+    var raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    var obj = JSON.parse(raw);
+    if (!obj || !obj.token || !obj.exp) return null;
+    if (Date.now() > obj.exp) return null;
+    return obj.token;
+  } catch { return null; }
 }
 
-function isAuthed() {
-  try {
-    const a = JSON.parse(localStorage.getItem(AUTH_KEY) || 'null');
-    if (!a) return false;
-    return Date.now() < a.exp;
-  } catch { return false; }
+function storeToken(token) {
+  // Match server's 24-hour expiry (set in handleBohanSiteAuth)
+  localStorage.setItem(AUTH_KEY, JSON.stringify({
+    token: token,
+    exp: Date.now() + 24 * 60 * 60 * 1000
+  }));
+}
+
+function clearToken() {
+  try { localStorage.removeItem(AUTH_KEY); } catch {}
+}
+
+async function authWithServer(params) {
+  var qs = Object.keys(params)
+    .map(function(k) { return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]); })
+    .join('&');
+  qs += '&origin=' + encodeURIComponent(AUTH_ORIGIN) + '&_t=' + Date.now();
+  var resp = await fetch(AUTH_API_URL + '?action=bohanSiteAuth&' + qs, { cache: 'no-store' });
+  return resp.json();
+}
+
+function applySiteData(data) {
+  if (!data) return;
+  if (Array.isArray(data.examiners) && data.examiners.length) {
+    EXAMINER_NAMES = data.examiners;
+  }
+  // Images may have been added while auth was still in flight — redraw
+  // so their examiner checkboxes pick up the server list.
+  if (images.length) renderCards();
+}
+
+function onAuthOk() {
+  document.getElementById('password-gate').classList.add('hidden');
+  try { localStorage.removeItem('site_auth_v1'); } catch {} // old client-side gate key
 }
 
 async function checkPassword() {
-  const input = document.getElementById('password-input').value;
-  const err = document.getElementById('password-gate-error');
+  var input = document.getElementById('password-input').value;
+  var err = document.getElementById('password-gate-error');
+  var btn = document.querySelector('#password-gate-box button');
   err.textContent = '';
-  const h = await sha256(input);
-  if (h === PWD_HASH) {
-    localStorage.setItem(AUTH_KEY, JSON.stringify({ exp: Date.now() + AUTH_DAYS*24*60*60*1000 }));
-    document.getElementById('password-gate').classList.add('hidden');
-  } else {
-    err.textContent = 'סיסמה שגויה';
-    document.getElementById('password-input').value = '';
+  if (btn) { btn.disabled = true; btn.textContent = 'מאמת...'; }
+  try {
+    var resp = await authWithServer({ password: input });
+    if (resp && resp.status === 'ok' && resp.token && resp.data) {
+      storeToken(resp.token);
+      applySiteData(resp.data);
+      onAuthOk();
+    } else {
+      err.textContent = (resp && resp.message) ? resp.message : 'סיסמה שגויה';
+      document.getElementById('password-input').value = '';
+    }
+  } catch (e) {
+    err.textContent = 'שגיאת תקשורת — נסה שוב';
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'היכנס'; }
   }
 }
 
-document.getElementById('password-input').addEventListener('keydown', e => {
+async function tryTokenLogin() {
+  var token = getStoredToken();
+  if (!token) return false;
+  try {
+    var resp = await authWithServer({ token: token });
+    if (resp && resp.status === 'ok' && resp.data) {
+      applySiteData(resp.data);
+      onAuthOk();
+      return true;
+    }
+    clearToken();
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+document.getElementById('password-input').addEventListener('keydown', function(e) {
   if (e.key === 'Enter') checkPassword();
 });
 
-if (isAuthed()) {
-  document.getElementById('password-gate').classList.add('hidden');
-}
+// On load: try silent token re-auth; if that fails the password gate stays up.
+tryTokenLogin();
 </script>
 
 
@@ -263,20 +326,9 @@ let token = localStorage.getItem('gh_token') || '';
 let images = [];
 
 // === EXAMINER NAMES ===
-const EXAMINER_NAMES = [
-  'אללוף יצחק',
-  'גיטלמן ויטלי',
-  'אלבלה אברהם',
-  'נגאוקר שמשון',
-  'מלל דרור',
-  'קורנבליט אלכס',
-  'שרון צרימי',
-  'יניר נאוגאוקר',
-  'פלס דוד',
-  'לוי בנימין',
-  'רון יהוד',
-  'כחלון ניסים'
-];
+// Filled from the server (bohanSiteAuth) after login — see the password-gate
+// script above. The list is BOHAN_SITE_EXAMINERS in external_exam_apps_script.js.
+let EXAMINER_NAMES = [];
 
 // === TOKEN ===
 const tokenInput = document.getElementById('token-input');
@@ -392,6 +444,12 @@ function renderCards() {
     exDiv.innerHTML = '<div class="card-examiners-title">בוחנים בתמונה:</div>';
     const checksDiv = document.createElement('div');
     checksDiv.className = 'examiner-checks';
+    if (EXAMINER_NAMES.length === 0) {
+      const warn = document.createElement('div');
+      warn.style.cssText = 'color:#e0a030;font-size:0.78rem;padding:2px 0;';
+      warn.textContent = 'רשימת הבוחנים לא נטענה מהשרת — רענן את הדף והתחבר מחדש';
+      checksDiv.appendChild(warn);
+    }
     EXAMINER_NAMES.forEach(name => {
       const label = document.createElement('label');
       label.className = 'examiner-check' + (img.examiners.includes(name) ? ' checked' : '');

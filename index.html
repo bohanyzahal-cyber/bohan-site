@@ -423,7 +423,9 @@ header p {
 // ScriptProperties; the HTML only sends what the user typed and gets
 // back a short-lived signed token (24h) along with the site data.
 // Old client-side SHA-256 hash is gone — bypassing JS no longer helps.
-const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbzOI0zrDEngP-GvlRblhOk8tQsYBvWZ2gGliIQHTpS67WrDZl4la8NPpwtJr_Vjsh3Gzg/exec';
+// 2026-07-31: points at the STANDALONE bohan-site-server Apps Script
+// project — fully separated from the exam-system deployment.
+const AUTH_API_URL = 'https://script.google.com/macros/s/AKfycbwWtoSd7ivgXZi0luvYmX8FIZdSGevAHfbCmvKJElgU5egF2rPlC7m9f-k6OILbqIFT/exec';
 const AUTH_KEY = 'site_auth_v2'; // bump key so old client-side auth doesn't carry over
 const AUTH_ORIGIN = 'bohanyzahal-site';
 
